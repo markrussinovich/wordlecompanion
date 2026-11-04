@@ -219,6 +219,34 @@ describe('persistent extension play', () => {
     });
     expect(result.session.rows).toEqual(rows);
     expect(result.session.answer).toBeUndefined();
+    const completedRows = [
+      ...rows,
+      [...'APPLE'].map((letter) => ({ letter, status: 'correct' })),
+    ];
+    (chrome.tabs.sendMessage as jest.Mock).mockResolvedValueOnce({
+      success: true,
+      rows: completedRows,
+    });
+    await play({
+      type: MessageType.SUBMIT_PLAY_GUESS,
+      date: '2026-10-31',
+      guess: 'APPLE',
+      expectedRows: 1,
+    });
+    expect(stored[PLAY_SESSIONS_KEY]['2026-10-31']).toMatchObject({
+      mode: 'live',
+      status: 'won',
+      rows: completedRows,
+    });
+    expect(
+      (
+        await play({
+          type: MessageType.GET_PLAY_SESSION,
+          date: '2026-10-31',
+        })
+      ).session
+    ).toMatchObject({ status: 'won', canPlay: false, rows: completedRows });
+    expect(chrome.tabs.sendMessage).toHaveBeenCalledTimes(3);
   });
 
   it('synchronizes newer official rows on a rejected guess and does not create tabs while polling', async () => {
@@ -228,7 +256,7 @@ describe('persistent extension play', () => {
         date: '2026-10-31',
         poll: true,
       })
-    ).rejects.toThrow('Connect');
+    ).rejects.toThrow('NYT tab unavailable');
     expect(chrome.tabs.create).not.toHaveBeenCalled();
     (chrome.tabs.query as jest.Mock).mockResolvedValue([{ id: 7 }]);
     const rows = [[...'SLATE'].map((letter) => ({ letter, status: 'absent' }))];

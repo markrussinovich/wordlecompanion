@@ -7,7 +7,10 @@ import {
 } from '@playwright/test';
 import path from 'node:path';
 
-async function backgroundWorker(context: BrowserContext): Promise<Worker> {
+async function backgroundWorker(
+  context: BrowserContext,
+  liveNyt = false
+): Promise<Worker> {
   let background: Worker | undefined;
   await expect
     .poll(
@@ -16,7 +19,7 @@ async function backgroundWorker(context: BrowserContext): Promise<Worker> {
           if (
             (await worker
               .evaluate(() => chrome.runtime.getManifest().name)
-              .catch(() => '')) === 'Wordle Companion — Play & Stats'
+              .catch(() => '')) === 'WordlePop — Play & Stats'
           ) {
             background = worker;
             return true;
@@ -27,6 +30,24 @@ async function backgroundWorker(context: BrowserContext): Promise<Worker> {
       { timeout: 15000 }
     )
     .toBe(true);
+  if (!liveNyt) {
+    // Isolated UI tests must not open real NYT tabs on automatic connection.
+    await context.addInitScript(() => {
+      if (!globalThis.chrome?.runtime?.sendMessage) return;
+      const sendMessage = chrome.runtime.sendMessage;
+      chrome.runtime.sendMessage = ((
+        message: { type?: string },
+        ...args: unknown[]
+      ) => {
+        if (message?.type === 'CONNECT_NYT_PLAY')
+          return Promise.resolve({
+            success: false,
+            error: 'NYT is unavailable in this isolated test.',
+          });
+        return Reflect.apply(sendMessage, chrome.runtime, [message, ...args]);
+      }) as typeof chrome.runtime.sendMessage;
+    });
+  }
   return background!;
 }
 
@@ -483,6 +504,20 @@ test('played and unplayed popup boards keep the same geometry and navigation pos
         });
       });
     const played = await geometry();
+    const footerGeometry = async () => {
+      let bounds = { x: 0, y: 0, width: 0, height: 0 };
+      await expect
+        .poll(async () => {
+          bounds = await popup.locator('.popup-footer').evaluate((footer) => {
+            const { x, y, width, height } = footer.getBoundingClientRect();
+            return { x, y, width, height };
+          });
+          return bounds.width;
+        })
+        .toBeGreaterThan(0);
+      return bounds;
+    };
+    const playedFooter = await footerGeometry();
     await popup
       .getByRole('button', { name: 'Previous game', exact: true })
       .click();
@@ -495,6 +530,7 @@ test('played and unplayed popup boards keep the same geometry and navigation pos
       'false'
     );
     const unplayed = await geometry();
+    expect(await footerGeometry()).toEqual(playedFooter);
     for (let index = 0; index < played.length; index++) {
       for (const property of ['x', 'y', 'width', 'height'] as const)
         expect(
@@ -611,6 +647,179 @@ test('selecting another unplayed puzzle restores board focus and direct typing',
   }
 });
 
+test('played pop-out fits its content without a gap above or below the footer', async ({
+  browserName,
+}, testInfo) => {
+  test.skip(
+    process.platform !== 'win32',
+    'Native Windows pop-out sizing needs a desktop session'
+  );
+  const extensionPath = path.resolve('dist');
+  const context = await chromium.launchPersistentContext('', {
+    channel: testInfo.project.use.channel || browserName,
+    headless: false,
+    viewport: null,
+    deviceScaleFactor: undefined,
+    args: [
+      '--start-minimized',
+      '--window-size=1280,900',
+      `--disable-extensions-except=${extensionPath}`,
+      `--load-extension=${extensionPath}`,
+    ],
+  });
+  try {
+    const background = await backgroundWorker(context);
+    const date = await background.evaluate(async () => {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const date = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
+      await chrome.storage.local.set({
+        wordlePlaySelection: date,
+        games: [
+          {
+            date,
+            solution: 'GAFFE',
+            attempts: 4,
+            won: true,
+            skillScore: 85,
+            luckScore: 80,
+            nytReaderAverage: 4.44,
+            nytReaderSource: 'manual',
+            guessPattern: ['STARE', 'CRANE', 'GABLE', 'GAFFE'].map(
+              (guess, index) =>
+                [...guess].map((letter) => ({
+                  letter,
+                  status: index === 3 ? 'correct' : 'absent',
+                }))
+            ),
+          },
+        ],
+      });
+      return date;
+    });
+    const root = background.url().replace(/\/background\.js.*$/, '');
+    const opened = context.waitForEvent('page');
+    await background.evaluate(
+      (url) =>
+        chrome.windows.create({
+          url,
+          type: 'popup',
+          focused: false,
+          width: 400,
+          height: 660,
+        }),
+      `${root}/popup.html?popout=1`
+    );
+    const popout = await opened;
+    await expect(popout.locator('#popup-game-board')).toHaveAttribute(
+      'data-date',
+      date
+    );
+    await expect(popout.locator('.stats-grid')).toBeVisible();
+    await expect(async () => {
+      const gaps = await popout.evaluate(() => {
+        const cards = document.querySelectorAll('.stat-card');
+        const last = cards[cards.length - 1].getBoundingClientRect();
+        const footer = document
+          .querySelector('.popup-footer')!
+          .getBoundingClientRect();
+        return {
+          above: footer.top - last.bottom,
+          below: window.innerHeight - footer.bottom,
+          overflow:
+            document.querySelector('.popup-main')!.scrollHeight -
+            document.querySelector('.popup-main')!.clientHeight,
+        };
+      });
+      expect(gaps.above).toBeGreaterThanOrEqual(0);
+      expect(gaps.above).toBeLessThanOrEqual(4);
+      // Native window bounds round differently at fractional display scaling.
+      expect(Math.abs(gaps.below)).toBeLessThanOrEqual(4);
+      expect(gaps.overflow).toBeLessThanOrEqual(1);
+    }).toPass({ timeout: 5000 });
+    const boardGeometry = () =>
+      popout.locator('#popup-game-board').evaluate((element) => {
+        const { x, y, width, height } = element.getBoundingClientRect();
+        return { x, y, width, height };
+      });
+    const board = await boardGeometry();
+    await popout.reload();
+    await expect(popout.locator('.stats-grid')).toBeVisible();
+    const reloaded = await boardGeometry();
+    expect(reloaded.width).toBe(board.width);
+    expect(reloaded.height).toBe(board.height);
+    expect(Math.abs(reloaded.x - board.x)).toBeLessThanOrEqual(1);
+    expect(Math.abs(reloaded.y - board.y)).toBeLessThanOrEqual(1);
+    await popout.locator('#latest-game-btn').click();
+    const controls = popout.frameLocator('#popup-play-controls');
+    await expect(controls.locator('.play-keyboard')).toBeVisible();
+    await expect(async () => {
+      const keyboard = (await controls
+        .locator('.play-keyboard')
+        .boundingBox())!;
+      const footer = (await popout.locator('.popup-footer').boundingBox())!;
+      const actions = (await controls.locator('.play-actions').boundingBox())!;
+      expect(footer.y - actions.y - actions.height).toBeGreaterThanOrEqual(0);
+      expect(footer.y - actions.y - actions.height).toBeLessThanOrEqual(8);
+      const popoutButton = controls.getByRole('button', {
+        name: 'Pop out',
+        exact: true,
+      });
+      const popoutBounds = (await popoutButton.boundingBox())!;
+      expect(actions.y).toBeGreaterThanOrEqual(keyboard.y + keyboard.height);
+      expect(popoutBounds.x).toBe(actions.x);
+      await expect(
+        controls.getByRole('button', { name: /Connect NYT|Sync NYT|Open NYT/ })
+      ).toHaveCount(0);
+      await expect(popoutButton).toHaveCSS(
+        'background-color',
+        'rgb(106, 170, 100)'
+      );
+      expect(
+        Math.abs(
+          (await popout.evaluate(() => innerHeight)) - footer.y - footer.height
+        )
+      ).toBeLessThanOrEqual(4);
+    }).toPass({ timeout: 5000 });
+    await popout
+      .getByRole('button', { name: 'Previous game', exact: true })
+      .click();
+    await expect(popout.locator('.stats-grid')).toBeVisible();
+    const resizedHeight = await popout.evaluate(async () => {
+      const current = await chrome.windows.getCurrent();
+      const height = current.height! + 100;
+      await chrome.windows.update(current.id!, { height });
+      return height;
+    });
+    await popout.getByRole('button', { name: '30D', exact: true }).click();
+    await expect
+      .poll(() =>
+        popout.evaluate(async (height) => {
+          const current = await chrome.windows.getCurrent();
+          return Math.abs(current.height! - height);
+        }, resizedHeight)
+      )
+      .toBeLessThanOrEqual(1);
+    const resized = await boardGeometry();
+    expect(resized.width).toBe(board.width);
+    expect(resized.height).toBe(board.height);
+    expect(Math.abs(resized.x - reloaded.x)).toBeLessThanOrEqual(1);
+    expect(Math.abs(resized.y - reloaded.y)).toBeLessThanOrEqual(1);
+    expect(
+      await popout.evaluate(() => {
+        const cards = document.querySelectorAll('.stat-card');
+        return (
+          document.querySelector('.popup-footer')!.getBoundingClientRect().top -
+          cards[cards.length - 1].getBoundingClientRect().bottom
+        );
+      })
+    ).toBeLessThanOrEqual(4);
+  } finally {
+    for (const page of context.pages()) await page.close();
+    await context.close();
+  }
+});
+
 test('real replay stays synchronized in popup, dashboard and persistent pop-out', async ({
   browserName,
 }, testInfo) => {
@@ -672,7 +881,7 @@ test('real replay stays synchronized in popup, dashboard and persistent pop-out'
     await popup.emulateMedia({ reducedMotion: 'no-preference' });
     await popup.goto(`${extensionRoot}/popup.html`);
     const brand = popup.getByRole('heading', {
-      name: 'Wordle Companion',
+      name: 'WordlePop',
       exact: true,
     });
     await expect(brand).toBeInViewport({ ratio: 1 });
@@ -773,12 +982,12 @@ test('real replay stays synchronized in popup, dashboard and persistent pop-out'
           .getBoundingClientRect();
         return {
           gap: popout.top - keyboard.bottom,
-          right: popout.right - keyboard.right,
+          left: popout.left - keyboard.left,
         };
       });
     expect(placement.gap).toBeGreaterThanOrEqual(0);
     expect(placement.gap).toBeLessThanOrEqual(12);
-    expect(Math.abs(placement.right)).toBeLessThanOrEqual(1);
+    expect(Math.abs(placement.left)).toBeLessThanOrEqual(1);
     const key = popupBoard.getByRole('button', { name: 'Type Y', exact: true });
     const keyboardBounds = await popupBoard
       .locator('.play-keyboard')
@@ -1022,7 +1231,7 @@ test('real replay stays synchronized in popup, dashboard and persistent pop-out'
     await expect(popout.getByRole('textbox')).toHaveCount(0);
     await expect(
       popoutControls.getByRole('button', { name: 'Pop out', exact: true })
-    ).toHaveCount(0);
+    ).toBeVisible();
     for (const viewport of [
       { width: 424, height: 680 },
       { width: 380, height: 600 },
@@ -1594,10 +1803,10 @@ test('restored full drafts have visible editable tiles and advance with either k
     await controls.locator('body').click({ position: { x: 2, y: 155 } });
     await popup.keyboard.press('ArrowRight');
     await expect(
-      controls.getByRole('button', { name: 'Connect NYT', exact: true })
+      controls.getByRole('button', { name: 'Pop out', exact: true })
     ).toBeEnabled();
     await controls
-      .getByRole('button', { name: 'Connect NYT', exact: true })
+      .getByRole('button', { name: 'Pop out', exact: true })
       .focus();
     await popup.keyboard.press('ArrowLeft');
     await expect(
@@ -1628,7 +1837,7 @@ test('live NYT feedback comes through a background tab without changing the acti
     ],
   });
   try {
-    const background = await backgroundWorker(context);
+    const background = await backgroundWorker(context, true);
     const extensionRoot = background.url().replace(/\/background\.js.*$/, '');
     await background.evaluate(() =>
       chrome.storage.local.set({ wordleShowUnplayed: true })
@@ -1637,8 +1846,8 @@ test('live NYT feedback comes through a background tab without changing the acti
     await play.goto(`${extensionRoot}/popup.html`);
     const controls = play.frameLocator('#popup-play-controls');
     await expect(
-      controls.getByRole('button', { name: 'Connect NYT', exact: true })
-    ).toBeEnabled();
+      controls.getByRole('button', { name: /Connect NYT|Sync NYT|Open NYT/ })
+    ).toHaveCount(0);
     await expect(
       controls.getByRole('button', { name: 'Pop out', exact: true })
     ).toBeInViewport({ ratio: 1 });
@@ -1647,9 +1856,6 @@ test('live NYT feedback comes through a background tab without changing the acti
         .locator('body')
         .evaluate(() => document.documentElement.scrollHeight <= innerHeight)
     ).toBe(true);
-    await controls
-      .getByRole('button', { name: 'Connect NYT', exact: true })
-      .click();
     await expect(
       controls.getByRole('button', { name: 'Type Z', exact: true })
     ).toBeEnabled({ timeout: 90000 });

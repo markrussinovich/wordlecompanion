@@ -272,6 +272,9 @@
     const params = new URLSearchParams(window.location.search);
     const popout = params.get("popout") === "1";
     const embedded = params.get("embedded") === "1";
+    let popoutSized = false;
+    let fittedPopoutHeight = null;
+    let controlsHeightReady = false;
     let initialDate = params.get("date");
     if (popout)
       document.documentElement.dataset.popout = "true";
@@ -331,8 +334,11 @@
         return;
       if (event.data?.type === "WORDLE_PLAY_SIZE") {
         const height = event.data.height;
-        if (embedded && Number.isFinite(height) && height > 0 && height <= 600)
+        if ((embedded || popout) && Number.isFinite(height) && height > 0 && height <= 600) {
           frame.parentElement.style.height = `${height}px`;
+          controlsHeightReady = true;
+          fitPopoutWindow();
+        }
         return;
       }
       if (event.data?.type === "WORDLE_PLAY_NAV" && event.data.date === allGames[currentGameIndex]?.date && (event.data.key === "ArrowLeft" || event.data.key === "ArrowRight")) {
@@ -514,6 +520,30 @@
     };
     let renderedHtml = "";
     let renderedViewerHtml = "";
+    function fitPopoutWindow() {
+      if (!popout || !historyLoaded || isLoading || (playing ? playBusy || !playSession || !controlsHeightReady : !statistics))
+        return;
+      requestAnimationFrame(() => {
+        const bounds = container.firstElementChild?.getBoundingClientRect();
+        const main = container.querySelector(".popup-main");
+        const contentHeight = bounds && main ? bounds.height + Math.max(0, main.scrollHeight - main.clientHeight) : 0;
+        if (!contentHeight)
+          return;
+        chrome.windows.getCurrent().then((current) => {
+          if (current.type !== "popup" || current.id === void 0 || !current.height)
+            return;
+          if (popoutSized && (fittedPopoutHeight === null || Math.abs(current.height - fittedPopoutHeight) > 4))
+            return;
+          const frameHeight = Math.max(0, current.height - window.innerHeight);
+          const height = Math.min(Math.ceil(contentHeight + frameHeight), screen.availHeight);
+          popoutSized = true;
+          fittedPopoutHeight = height;
+          if (Math.abs(height - current.height) <= 1)
+            return;
+          return chrome.windows.update(current.id, { height });
+        }).catch((error) => console.warn("[Popup] Could not fit pop-out window:", error));
+      });
+    }
     function render() {
       playing = Boolean(historyLoaded && allGames[currentGameIndex] && !hasUserGame(allGames[currentGameIndex]));
       const timeFrames = ["7d", "30d", "90d", "all"];
@@ -534,13 +564,14 @@
             document.getElementById("popup-game-board")?.focus({ preventScroll: true });
           revealGuesses(document.getElementById("popup-game-board"));
         }
+        fitPopoutWindow();
         return;
       }
       const html = `
       <div class="popup-container">
         <header class="popup-header">
           <div class="popup-header-top">
-            <h1>Wordle Companion</h1>
+            <h1>WordlePop</h1>
             <button class="refresh-btn" id="refresh-btn" ${scraperStatus.active ? "disabled" : ""}>
               \u21BB Refresh
             </button>
@@ -575,9 +606,11 @@
         return;
       renderedHtml = html;
       renderedViewerHtml = viewerHtml;
+      controlsHeightReady = false;
       container.innerHTML = html;
       attachEventListeners();
       revealGuesses(document.getElementById("popup-game-board"));
+      fitPopoutWindow();
     }
     function renderContent() {
       if (playing) {

@@ -187,6 +187,20 @@ button:disabled {
   gap: 8px;
   font-size: 13px;
 }
+.play-popout {
+  margin-top: 4px;
+}
+.play-popout .play-popout-primary {
+  margin-right: auto;
+  background: var(--cp-wordle-correct);
+  border-color: var(--cp-wordle-correct);
+  color: var(--cp-wordle-scored-text);
+  font-weight: 700;
+}
+.play-popout .play-popout-primary:hover:not(:disabled) {
+  background: var(--cp-wordle-accent-strong);
+  border-color: var(--cp-wordle-accent-strong);
+}
 .play-message {
   min-height: 24px;
   margin: 0;
@@ -372,14 +386,12 @@ button:disabled {
   overflow: hidden;
   clip-path: inset(50%);
 }
-.compact header button,
 .compact .play-actions button {
   padding: 4px 8px;
   font-size: 11px;
 }
 .compact .play-picker {
   margin-top: 0;
-  padding-right: 76px;
   font-size: 12px;
 }
 .compact select {
@@ -413,7 +425,6 @@ button:disabled {
   height: 20px;
 }
 .controls-only .play-popout {
-  justify-content: flex-end;
   margin-top: 4px;
   margin-bottom: 0;
 }

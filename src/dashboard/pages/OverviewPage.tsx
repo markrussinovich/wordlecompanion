@@ -92,7 +92,7 @@ const OverviewPage: React.FC = () => {
     <div className="dashboard-container">
       {/* Header */}
       <div className="dashboard-header">
-        <h1>Wordle Companion</h1>
+        <h1>WordlePop</h1>
         <p className="subtitle">Play, compare, and track your Wordle progress{' | '}<Link to="/play">Play Wordle</Link></p>
       </div>
 

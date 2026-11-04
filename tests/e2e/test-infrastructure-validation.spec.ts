@@ -10,7 +10,7 @@ test.describe('E2E Test Infrastructure Validation', () => {
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Wordle Companion Test</title>
+          <title>WordlePop Test</title>
         </head>
         <body>
           <div data-testid="test-container">

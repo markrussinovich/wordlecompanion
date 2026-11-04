@@ -16,7 +16,7 @@ const DashboardApp: React.FC = () => {
     return (
       <div className="dashboard-loading">
         <div className="loading-spinner"></div>
-        <div className="loading-text">Loading Wordle Companion...</div>
+        <div className="loading-text">Loading WordlePop...</div>
       </div>
     );
   }

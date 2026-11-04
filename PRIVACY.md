@@ -1,16 +1,16 @@
-# Privacy Policy - Wordle Companion — Play & Stats
+# Privacy Policy - WordlePop — Play & Stats
 
-**Last updated: November 1, 2026**
+**Last updated: November 3, 2026**
 
 ## Overview
 
-**Wordle Companion respects your privacy and operates with complete transparency.**
+**WordlePop respects your privacy and operates with complete transparency.**
 
-Wordle Companion is a browser extension for playing unplayed Wordle puzzles and analyzing your Wordle game performance. This privacy policy explains what data the extension uses and stores, and how its NYT interactions work.
+WordlePop is a browser extension for playing unplayed Wordle puzzles and analyzing your Wordle game performance. This privacy policy explains what data the extension uses and stores, and how its NYT interactions work.
 
 ## Data Collection
 
-Wordle Companion collects only the data necessary to provide statistics about your Wordle games:
+WordlePop collects only the data necessary to provide statistics about your Wordle games:
 
 - **Wordle game results**: Puzzle numbers, dates, guess counts, board states, and win/loss status
 - **WordleBot metrics**: Skill and luck scores when available from the NYTimes WordleBot page
@@ -41,7 +41,7 @@ We do not sell or rent your data, send it to an extension-operated service, or a
 
 The extension makes requests to NYT for available WordleBot history, per-puzzle reader summaries, and historical puzzle answers. Those requests are subject to NYT's own policies. Reader-summary and historical-answer requests do not upload your stored game history.
 
-Past replays are scored locally and do not upload results to NYT or alter official history. Today's guesses are different: the extension sends them to the actual NYT game tab and reads that site's feedback. NYT handles those guesses and its own persistence using your browser's NYT session. The extension does not guarantee signed-in account synchronization. Imported results remain separate from extension gameplay progress.
+Past replays are scored locally and do not upload results to NYT or alter official history. Today's board connects automatically when you open it: the extension finds or opens a background NYT game tab, sends today's guesses to that tab, and reads the site's feedback. NYT handles those guesses and its own persistence using your browser's NYT session. The extension does not guarantee signed-in account synchronization. Imported results remain separate from extension gameplay progress.
 
 ## Data Retention
 

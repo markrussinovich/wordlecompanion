@@ -1,4 +1,4 @@
-// Background service worker for the Wordle Companion extension
+// Background service worker for the WordlePop extension
 // Handles extension lifecycle, message routing, and storage operations
 
 import { 

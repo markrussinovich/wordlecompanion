@@ -8,7 +8,7 @@ Suggested naming convention:
 - `screenshot-01-overview.png`
 - `screenshot-02-comparisons.png`
 - `screenshot-03-solver-games.png`
-- `screenshot-04-popup.png` - historical replay and today's NYT connection controls
+- `screenshot-04-popup.png` - historical replay and today's automatically connected board
 - `screenshot-05-play.png` - dedicated puzzle picker, board, and keyboard
 - `promo-tile-440x280.png`
 - `marquee-1400x560.png`
@@ -24,6 +24,6 @@ npm run build:extension
 npx tsx --tsconfig config\tsconfig.json scripts\capture-listing-screenshots.ts
 ```
 
-The capture does not use personal records, sign into NYT, or submit today's game. Today's screenshots show the connection controls; historical replay screenshots use demo puzzle data. Colors are taken from the extension's theme variables, and generated PNGs have no alpha channel.
+The capture does not use personal records, sign into NYT, or submit today's game. Today's connection responses are simulated in the isolated profile and the panel is labeled as a demo; historical replay screenshots use demo puzzle data. Colors are taken from the extension's theme variables, and generated screenshots and promo PNGs have no alpha channel.
 
 After exporting assets, review each image and update the status table in `../asset-plan.md`.

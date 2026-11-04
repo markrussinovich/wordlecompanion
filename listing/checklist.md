@@ -1,21 +1,31 @@
 # Pre-Publication Checklist
 
-Use this checklist before submitting **Wordle Companion — Play & Stats** to the Chrome Web Store. Update the status column as you complete each step.
+Use this checklist before submitting **WordlePop — Play & Stats 1.1.2** to the Chrome Web Store. Update the status column as you complete each step.
 
 | Step                                                                | Status | Owner | Notes                                                                 |
 | ------------------------------------------------------------------- | ------ | ----- | --------------------------------------------------------------------- |
-| Verify manifest version matches marketing copy                      | ☐      |       | `src/extension/manifest.json` and package description                 |
-| Run unit tests (`npm test`)                                         | ☐      |       | Ensure green tests before packaging                                   |
-| Run quick build script (`npm run build:quick`)                      | ☐      |       | Produces production assets in `dist/` and `listing/latest-build/` zip |
-| Manually smoke-test extension from `dist/`                          | ☐      |       | Check popup import, dashboard charts, NYT login messaging             |
-| Capture/update screenshots in `listing/assets/`                     | ☐      |       | Follow `asset-plan.md` dimensions                                     |
-| Export promo tile (440×280)                                         | ☐      |       | Maintain brand gradient and legible text                              |
-| Update store listing copy in `store-listing.md` if features changed | ☐      |       | Review summary (≤132 chars) and description                           |
-| Confirm privacy statement matches data usage                        | ☐      |       | Update if data practices change                                       |
-| Provide support URL and contact method                              | ☐      |       | e.g., GitHub issues or support email                                  |
+| Verify manifest version matches marketing copy                      | ☑     |       | WordlePop 1.1.2; package and lockfile agree                           |
+| Run unit tests (`npm test`)                                         | ☑     |       | 106 tests passed                                                      |
+| Run quick build script (`npm run build:quick`)                      | ☑     |       | Typechecked build passed; new WordlePop ZIP generated                 |
+| Manually smoke-test extension from `dist/`                          | ☐      |       | 32 isolated Chrome/Edge checks passed; personal-profile smoke not run |
+| Capture/update screenshots in `listing/assets/`                     | ☑     |       | Five current 1280×800 RGB screenshots reviewed                        |
+| Export promo tile (440×280)                                         | ☑     |       | WordlePop promo and 1400×560 marquee reviewed                         |
+| Update store listing copy in `store-listing.md` if features changed | ☑     |       | New branding and automatic NYT connection; 118-character summary      |
+| Confirm privacy statement matches data usage                        | ☑     |       | Automatic background NYT connection disclosed                         |
+| Provide support URL and contact method                              | ☑     |       | Existing GitHub issues URL retained                                   |
 | Double-check policies (spam, metadata, impersonation)               | ☐      |       | See Chrome Web Store Program Policies                                 |
-| Upload zip to developer dashboard, save draft                       | ☑     |       | Uploaded `wordle-companion-1.1.1.zip`                                 |
-| Submit for review                                                   | ☑     |       | Submitted November 1, 2026; awaiting review decision                  |
+| Upload zip to developer dashboard, save draft                       | ☐      |       | New package: `wordlepop-1.1.2.zip`; not uploaded                      |
+| Submit for review                                                   | ☐      |       | WordlePop 1.1.2 has not been submitted                                |
+
+The earlier Wordle Companion 1.1.1 package was uploaded and submitted November 1, 2026. Its ZIP is preserved unchanged; this checklist tracks the new release, not that prior submission.
+
+## Verification notes
+
+- Adversarial correctness review found no significant issues in the release changes. Packaging verification caught an obsolete generated popup page with the old brand; the build now removes it before packaging.
+- Two opt-in live NYT browser checks were skipped. Automated runs did not submit real current-day guesses or use a personal account.
+- All screenshot and promo PNGs have the required dimensions and RGB encoding; the refreshed store icon preserves transparency.
+- No exact **WordlePop** result was returned by the Chrome Web Store search, but an existing **Wordle Popup** extension has a similar name. This is not trademark clearance.
+- Store upload/submission and GitHub push are not performed by the build.
 
 ## Release notes guidance
 
@@ -23,7 +33,14 @@ Use this checklist before submitting **Wordle Companion — Play & Stats** to th
 - Mention any onboarding tweaks (e.g., improved NYT login detection).
 - Link back to docs or GitHub for detailed changelog if desired.
 
-### 1.1.1
+### 1.1.2
+
+- Renamed to **WordlePop — Play & Stats**, with updated UX, documentation, extension icons, screenshots, and promotional graphics. Existing storage keys, games, and play sessions remain compatible.
+- Today's eligible board connects automatically to the real NYT game; removed manual Connect/Sync and Open NYT buttons. NYT login and site prompts may still require opening its tab.
+- Pop out is the emphasized, left-aligned action below the keyboard in every gameplay view. Pop-outs fit their content as dates change, while preserving manual window resizing.
+- Historical replays remain local and do not update NYT account history. NYT continues to handle official current-day guesses and account persistence.
+
+### 1.1.1 (previously submitted as Wordle Companion)
 
 - Renamed to Wordle Companion — Play & Stats, with consistent popup, dashboard, play-view, and store branding. Existing saved games and sessions remain compatible.
 - Play unplayed dates directly in the popup, dashboard tiles, or a persistent pop-out. Shared drafts and guesses, tile-entry pops, staggered feedback flips, and invalid-guess shakes.
@@ -36,6 +53,5 @@ Use this checklist before submitting **Wordle Companion — Play & Stats** to th
 ## Support & Contact
 
 - Primary support: <https://github.com/markrussinovich/wordlecompanion/issues>
-- Optional email alias: `wordlestatupport@example.com` (replace with real inbox before launch).
 
 Keep the checklist with the repository so future releases stay consistent and auditable.

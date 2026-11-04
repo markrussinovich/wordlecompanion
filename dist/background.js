@@ -520,7 +520,7 @@ async function liveTab(session, create) {
   if (tab)
     return tab;
   if (!create)
-    throw new Error("Connect to NYT to load today's official game.");
+    throw new Error("NYT tab unavailable. Reopen this view to retry.");
   return chrome.tabs.create({ url: nytUrl, active: false });
 }
 async function sendToNyt(tabId, message, wait) {
@@ -531,13 +531,13 @@ async function sendToNyt(tabId, message, wait) {
     } catch {
       if (Date.now() >= deadline)
         throw new Error(
-          "NYT is not ready. Open its tab, finish any prompts, then reconnect."
+          "NYT is not ready. Open its tab, finish any prompts, then reopen this view."
         );
       await new Promise((resolve) => setTimeout(resolve, 500));
     }
   } while (Date.now() < deadline);
   throw new Error(
-    "NYT is not ready. Open its tab, finish any prompts, then reconnect."
+    "NYT is not ready. Open its tab, finish any prompts, then reopen this view."
   );
 }
 function applyLive(session, response, tabId) {
@@ -702,7 +702,7 @@ async function handle(message) {
     } else {
       const tab = await liveTab(session, false);
       if (tab.id === void 0)
-        throw new Error("Connect to NYT first.");
+        throw new Error("NYT tab unavailable. Reopen this view to retry.");
       const response = await sendToNyt(
         tab.id,
         {

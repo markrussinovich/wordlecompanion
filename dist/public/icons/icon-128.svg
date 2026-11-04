@@ -1,4 +1,5 @@
 <svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <title>WordlePop</title>
   <rect width="128" height="128" rx="20" fill="#ffffff"/>
   <rect x="16" y="16" width="26" height="26" rx="4" fill="#f8f8f8" stroke="#878a8c" stroke-width="2.5"/>
   <rect x="50" y="16" width="26" height="26" rx="4" fill="#f8f8f8" stroke="#878a8c" stroke-width="2.5"/>
@@ -9,7 +10,7 @@
   <rect x="16" y="84" width="26" height="26" rx="4" fill="#6aaa64" stroke="#548d4e" stroke-width="2.5"/>
   <rect x="50" y="84" width="26" height="26" rx="4" fill="#6aaa64" stroke="#548d4e" stroke-width="2.5"/>
   <rect x="84" y="84" width="26" height="26" rx="4" fill="#6aaa64" stroke="#548d4e" stroke-width="2.5"/>
-  <circle cx="98" cy="98" r="28" fill="#2d7ff9" stroke="#ffffff" stroke-width="4"/>
+  <circle cx="98" cy="98" r="28" fill="#b11f4b" stroke="#ffffff" stroke-width="4"/>
   <rect x="85" y="102" width="6" height="12" rx="1.5" fill="#ffffff"/>
   <rect x="93" y="96" width="6" height="18" rx="1.5" fill="#ffffff"/>
   <rect x="101" y="90" width="6" height="24" rx="1.5" fill="#ffffff"/>

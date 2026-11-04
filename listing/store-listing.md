@@ -1,8 +1,8 @@
-# Chrome Web Store Listing – Wordle Companion
+# Chrome Web Store Listing – WordlePop
 
 ## Title
 
-Wordle Companion — Play & Stats
+WordlePop — Play & Stats
 
 ## Summary (≤132 characters)
 
@@ -10,13 +10,13 @@ Play unplayed Wordle puzzles in your popup or dashboard, track stats, and compar
 
 ## Description
 
-Wordle Companion brings Wordle gameplay and your WordleBot history together. Resume puzzles across views, track trends, and compare your results with NYT readers and a local solver.
+WordlePop brings Wordle gameplay and your WordleBot history together. Resume puzzles across views, track trends, and compare your results with NYT readers and a local solver.
 
 ### Key features
 
 - **Play in place:** Unplayed boards become playable in the popup, dashboard tiles, or puzzle-picker view. Use physical or on-screen keys, with letter pops, feedback flips, invalid-word shakes, and reduced-motion support.
 - **Browse and resume:** Show unplayed includes blank records and missing dates. Browse with date arrows, Left/Right keys, or the picker. Drafts and guesses synchronize across views; a persistent pop-out stays open after the popup closes.
-- **Past and present:** Replay historical puzzles locally, or connect today's board to the actual NYT tab for official feedback.
+- **Past and present:** Replay historical puzzles locally. Today's board connects automatically to the actual NYT tab for official feedback; no separate sync step is needed after finishing.
 - **Track performance:** Win rate, average turns, distributions, streaks, and available WordleBot skill/luck scores. Completed extension games update dashboard timelines and statistics without replacing imported results.
 - **Interactive comparisons:** Toggle your turns, solver turns, NYT reader averages, skill, and luck. Choose individual games, rolling averages, or cumulative averages; drag the range to filter head-to-head stats and game tiles.
 - **Review guess paths:** Switch between feedback-colored user and solver boards. Finished games show completed comparisons. The local solver is a normal-mode heuristic, not NYT WordleBot or globally optimal; unavailable solver/reader results show N/A.

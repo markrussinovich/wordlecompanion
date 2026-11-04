@@ -132,7 +132,8 @@ async function liveTab(
   });
   const tab = tabs.find((item) => item.id === session.nytTabId) || tabs[0];
   if (tab) return tab;
-  if (!create) throw new Error("Connect to NYT to load today's official game.");
+  if (!create)
+    throw new Error('NYT tab unavailable. Reopen this view to retry.');
   return chrome.tabs.create({ url: nytUrl, active: false });
 }
 
@@ -148,13 +149,13 @@ async function sendToNyt(
     } catch {
       if (Date.now() >= deadline)
         throw new Error(
-          'NYT is not ready. Open its tab, finish any prompts, then reconnect.'
+          'NYT is not ready. Open its tab, finish any prompts, then reopen this view.'
         );
       await new Promise((resolve) => setTimeout(resolve, 500));
     }
   } while (Date.now() < deadline);
   throw new Error(
-    'NYT is not ready. Open its tab, finish any prompts, then reconnect.'
+    'NYT is not ready. Open its tab, finish any prompts, then reopen this view.'
   );
 }
 
@@ -336,7 +337,8 @@ async function handle(message: PlayMessage): Promise<any> {
       if (session.status !== 'playing') session.answer = answer;
     } else {
       const tab = await liveTab(session, false);
-      if (tab.id === undefined) throw new Error('Connect to NYT first.');
+      if (tab.id === undefined)
+        throw new Error('NYT tab unavailable. Reopen this view to retry.');
       const response = await sendToNyt(
         tab.id,
         {

@@ -1,6 +1,6 @@
 # Chrome Web Store Listing Artifacts
 
-This directory contains the marketing copy, asset briefs, and release packaging generated for the Chrome Web Store submission of **Wordle Companion — Play & Stats**. The content reflects guidance from the ["Creating a great listing page" documentation](https://developer.chrome.com/docs/webstore/best-listing).
+This directory contains the marketing copy, asset briefs, and release packaging generated for the Chrome Web Store submission of **WordlePop — Play & Stats**. The content reflects guidance from the ["Creating a great listing page" documentation](https://developer.chrome.com/docs/webstore/best-listing).
 
 ## Contents
 
@@ -11,7 +11,9 @@ This directory contains the marketing copy, asset briefs, and release packaging 
 - `assets/` – current screenshots and promotional images generated from the extension with synthetic demo history, plus capture guidance.
 - `latest-build/` – populated automatically once `npm run build:quick` (or `node scripts/quick-build-extension.js`) finishes. Contains a versioned ZIP that you can upload to the Chrome Web Store dashboard.
 
-Current submission package: `latest-build/wordle-companion-1.1.1.zip`.
+Current release package: `latest-build/wordlepop-1.1.2.zip` (not uploaded or submitted).
+
+The previously submitted `latest-build/wordle-companion-1.1.1.zip` is preserved unchanged.
 
 ## How to use
 

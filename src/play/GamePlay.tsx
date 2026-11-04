@@ -64,8 +64,6 @@ const GamePlay: React.FC = () => {
     new URLSearchParams(window.location.search).get('compact') === '1';
   const controlsOnly =
     new URLSearchParams(window.location.search).get('controls') === '1';
-  const popout =
-    new URLSearchParams(window.location.search).get('popout') === '1';
   const completed =
     !controlsOnly &&
     session?.date === date &&
@@ -300,12 +298,28 @@ const GamePlay: React.FC = () => {
     setConnected(false);
     chrome.runtime
       .sendMessage({ type: MessageType.GET_PLAY_SESSION, date })
-      .then((response) => {
+      .then(async (response) => {
         if (cancelled) return;
         if (!response?.success)
           throw new Error(response?.error || 'Could not load this game.');
         setSession(response.session);
         setConnected(Boolean(response.session.nytTabId));
+        if (
+          response.session.mode === 'live' &&
+          response.session.status === 'playing' &&
+          response.session.canPlay !== false
+        ) {
+          setConnected(false);
+          const connection = await chrome.runtime.sendMessage({
+            type: MessageType.CONNECT_NYT_PLAY,
+            date,
+          });
+          if (cancelled) return;
+          if (!connection?.success)
+            throw new Error(connection?.error || 'Could not connect to NYT.');
+          setSession(connection.session);
+          setConnected(true);
+        }
       })
       .catch((reason) => {
         if (!cancelled) setError(reason.message);
@@ -413,7 +427,9 @@ const GamePlay: React.FC = () => {
         if (!cancelled) {
           setConnected(false);
           setError(
-            reason instanceof Error ? reason.message : 'Reconnect to NYT.'
+            reason instanceof Error
+              ? reason.message
+              : 'NYT connection was lost. Reopen this view to retry.'
           );
         }
       } finally {
@@ -541,7 +557,7 @@ const GamePlay: React.FC = () => {
         : session?.canPlay === false
           ? 'This date already has a user game.'
           : session?.mode === 'live' && !connected
-            ? 'Connect to load the NYT board.'
+            ? 'NYT connection unavailable. Reopen this view to retry.'
             : '';
   keyHandler.current = (key) => {
     if (disabled || busyRef.current) return;
@@ -596,15 +612,7 @@ const GamePlay: React.FC = () => {
       {!controlsOnly && (
         <>
           <header>
-            <h1>Wordle Companion</h1>
-            {!popout && (
-              <button
-                disabled={busy || !date}
-                onClick={() => void action(MessageType.OPEN_PLAY_WINDOW)}
-              >
-                Pop out
-              </button>
-            )}
+            <h1>WordlePop</h1>
           </header>
           <label className="play-picker">
             Puzzle
@@ -643,26 +651,6 @@ const GamePlay: React.FC = () => {
                 : 'Past puzzle. NYT account stats are unchanged.'}
           </p>
         </>
-      )}
-      {date === today && (
-        <div className="play-actions">
-          <button
-            disabled={
-              busy ||
-              session?.canPlay === false ||
-              session?.status !== 'playing'
-            }
-            onClick={() => void action(MessageType.CONNECT_NYT_PLAY)}
-          >
-            {connected ? 'Sync NYT' : 'Connect NYT'}
-          </button>
-          <button
-            disabled={busy}
-            onClick={() => void action(MessageType.OPEN_NYT_PLAY_TAB)}
-          >
-            Open NYT
-          </button>
-        </div>
       )}
       <div className="play-feedback">
         {statusMessage && (!controlsOnly || !error) && (
@@ -808,16 +796,15 @@ const GamePlay: React.FC = () => {
           </section>
         )}
       </div>
-      {controlsOnly && !popout && (
-        <div className="play-actions play-popout">
-          <button
-            disabled={busy || !date}
-            onClick={() => void action(MessageType.OPEN_PLAY_WINDOW)}
-          >
-            Pop out
-          </button>
-        </div>
-      )}
+      <div className="play-actions play-popout">
+        <button
+          className="play-popout-primary"
+          disabled={busy || !date}
+          onClick={() => void action(MessageType.OPEN_PLAY_WINDOW)}
+        >
+          Pop out
+        </button>
+      </div>
     </main>
   );
 };

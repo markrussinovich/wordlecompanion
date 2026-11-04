@@ -5,7 +5,7 @@ import { buildGameHistory, gamesWithPlaySessions, hasUserGame, SHOW_UNPLAYED_KEY
 import { PLAY_SESSIONS_KEY, PLAY_SELECTION_KEY } from '../../types/playTypes';
 import { createGuessReveal, shakeGuess } from '../../play/guessReveal';
 
-// Popup script for Wordle Companion extension
+// Popup script for WordlePop extension
 console.log('[Popup] Popup script loading...');
 
 // Simple popup implementation without React for now
@@ -49,6 +49,9 @@ document.addEventListener('DOMContentLoaded', function() {
   const params = new URLSearchParams(window.location.search);
   const popout = params.get('popout') === '1';
   const embedded = params.get('embedded') === '1';
+  let popoutSized = false;
+  let fittedPopoutHeight = null;
+  let controlsHeightReady = false;
   let initialDate = params.get('date');
   if (popout) document.documentElement.dataset.popout = 'true';
   if (embedded) document.documentElement.dataset.embedded = 'true';
@@ -99,8 +102,11 @@ document.addEventListener('DOMContentLoaded', function() {
     if (event.origin !== window.location.origin || event.source !== frame?.contentWindow) return;
     if (event.data?.type === 'WORDLE_PLAY_SIZE') {
       const height = event.data.height;
-      if (embedded && Number.isFinite(height) && height > 0 && height <= 600)
+      if ((embedded || popout) && Number.isFinite(height) && height > 0 && height <= 600) {
         frame.parentElement.style.height = `${height}px`;
+        controlsHeightReady = true;
+        fitPopoutWindow();
+      }
       return;
     }
     if (event.data?.type === 'WORDLE_PLAY_NAV' &&
@@ -282,6 +288,30 @@ document.addEventListener('DOMContentLoaded', function() {
   let renderedHtml = '';
   let renderedViewerHtml = '';
 
+  function fitPopoutWindow() {
+    if (!popout || !historyLoaded || isLoading ||
+      (playing ? playBusy || !playSession || !controlsHeightReady : !statistics)) return;
+    requestAnimationFrame(() => {
+      const bounds = container.firstElementChild?.getBoundingClientRect();
+      const main = container.querySelector('.popup-main');
+      const contentHeight = bounds && main
+        ? bounds.height + Math.max(0, main.scrollHeight - main.clientHeight)
+        : 0;
+      if (!contentHeight) return;
+      chrome.windows.getCurrent().then(current => {
+        if (current.type !== 'popup' || current.id === undefined || !current.height) return;
+        if (popoutSized && (fittedPopoutHeight === null ||
+          Math.abs(current.height - fittedPopoutHeight) > 4)) return;
+        const frameHeight = Math.max(0, current.height - window.innerHeight);
+        const height = Math.min(Math.ceil(contentHeight + frameHeight), screen.availHeight);
+        popoutSized = true;
+        fittedPopoutHeight = height;
+        if (Math.abs(height - current.height) <= 1) return;
+        return chrome.windows.update(current.id, { height });
+      }).catch(error => console.warn('[Popup] Could not fit pop-out window:', error));
+    });
+  }
+
   // Render popup
   function render() {
     playing = Boolean(historyLoaded && allGames[currentGameIndex] && !hasUserGame(allGames[currentGameIndex]));
@@ -304,6 +334,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (boardFocused) document.getElementById('popup-game-board')?.focus({ preventScroll: true });
         revealGuesses(document.getElementById('popup-game-board'));
       }
+      fitPopoutWindow();
       return;
     }
     
@@ -311,7 +342,7 @@ document.addEventListener('DOMContentLoaded', function() {
       <div class="popup-container">
         <header class="popup-header">
           <div class="popup-header-top">
-            <h1>Wordle Companion</h1>
+            <h1>WordlePop</h1>
             <button class="refresh-btn" id="refresh-btn" ${scraperStatus.active ? 'disabled' : ''}>
               ↻ Refresh
             </button>
@@ -348,11 +379,13 @@ document.addEventListener('DOMContentLoaded', function() {
     if (html === renderedHtml && container.firstElementChild) return;
     renderedHtml = html;
     renderedViewerHtml = viewerHtml;
+    controlsHeightReady = false;
     container.innerHTML = html;
     
     // Add event listeners
     attachEventListeners();
     revealGuesses(document.getElementById('popup-game-board'));
+    fitPopoutWindow();
   }
   
   function renderContent() {

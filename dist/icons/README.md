@@ -1,6 +1,6 @@
 # Extension Icons
 
-This directory contains the icon assets for the Wordle Companion browser extension.
+This directory contains the icon assets for the WordlePop browser extension.
 
 ## Icon Files
 
@@ -21,7 +21,7 @@ Each icon features:
   - Top row: Empty tiles (unfilled)
   - Middle row: Grey, Yellow, Grey (partial match)
   - Bottom row: All Green (correct word)
-- Blue circular badge in the bottom-right corner with white bar chart icon
+- Rose circular badge in the bottom-right corner with white bar chart icon
   - Indicates this is a statistics/analytics tool, not just Wordle
 
 ## Automatic Conversion

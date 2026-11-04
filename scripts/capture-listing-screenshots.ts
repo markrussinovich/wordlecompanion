@@ -62,6 +62,29 @@ async function capture() {
     page.on('pageerror', (error) => errors.push(error.message))
   );
   try {
+    await context.addInitScript(() => {
+      if (!globalThis.chrome?.runtime?.sendMessage) return;
+      const sendMessage = chrome.runtime.sendMessage;
+      chrome.runtime.sendMessage = ((
+        message: { type?: string; date?: string },
+        ...args: unknown[]
+      ) => {
+        if (message?.type === 'CONNECT_NYT_PLAY')
+          return Promise.resolve({
+            success: true,
+            session: {
+              date: message.date,
+              mode: 'live',
+              status: 'playing',
+              rows: [],
+              draft: '',
+              canPlay: true,
+              nytTabId: -1,
+            },
+          });
+        return Reflect.apply(sendMessage, chrome.runtime, [message, ...args]);
+      }) as typeof chrome.runtime.sendMessage;
+    });
     let background: Worker | undefined;
     await expect
       .poll(
@@ -70,7 +93,7 @@ async function capture() {
             if (
               (await worker
                 .evaluate(() => chrome.runtime.getManifest().name)
-                .catch(() => '')) === 'Wordle Companion — Play & Stats'
+                .catch(() => '')) === 'WordlePop — Play & Stats'
             ) {
               background = worker;
               return true;
@@ -137,7 +160,7 @@ async function capture() {
     await dashboard.goto(`${root}/dashboard.html`);
     await expect(
       dashboard.getByRole('heading', {
-        name: 'Wordle Companion',
+        name: 'WordlePop',
         exact: true,
       })
     ).toBeVisible();
@@ -159,6 +182,9 @@ async function capture() {
     });
     const save = async (image: Buffer, name: string) =>
       sharp(image).removeAlpha().png().toFile(path.join(assets, name));
+    await sharp(path.resolve('public', 'icons', 'icon-128.png'))
+      .png()
+      .toFile(path.join(assets, 'icon-128.png'));
     const overview = await dashboard.screenshot();
     await save(overview, 'screenshot-01-overview.png');
 
@@ -198,7 +224,7 @@ async function capture() {
     await expect(
       today
         .frameLocator('#popup-play-controls')
-        .getByRole('button', { name: 'Connect NYT', exact: true })
+        .getByRole('button', { name: 'Type A', exact: true })
     ).toBeEnabled();
     const todayPopup = await today.locator('.popup-container').screenshot();
 
@@ -236,13 +262,13 @@ async function capture() {
             text(
               640,
               105,
-              "Past replays stay local. Connect to NYT for today's game.",
+              "Past replays stay local. Today's board connects automatically.",
               22,
               palette.muted,
               'middle'
             ) +
             text(410, 760, 'HISTORICAL REPLAY', 20, palette.text, 'middle') +
-            text(870, 760, "TODAY'S NYT CONNECTION", 20, palette.text, 'middle')
+            text(870, 760, "TODAY'S BOARD · DEMO", 20, palette.text, 'middle')
         )
       )
         .composite([
@@ -307,7 +333,7 @@ async function capture() {
       .toFile(path.join(assets, 'resized', 'popupanddashboard.png'));
 
     const tiles = (x: number, y: number, size: number) =>
-      [...'STATS']
+      [...'POP!']
         .map(
           (letter, index) =>
             `<rect x="${x + index * (size + 6)}" y="${y}" width="${size}" height="${size}"
@@ -326,8 +352,8 @@ async function capture() {
       svg(
         440,
         280,
-        tiles(78, 44, 52) +
-          text(220, 156, 'Wordle Companion', 28, palette.foreground, 'middle') +
+        tiles(107, 44, 52) +
+          text(220, 156, 'WordlePop', 36, palette.foreground, 'middle') +
           text(
             220,
             204,
@@ -346,7 +372,7 @@ async function capture() {
           1400,
           560,
           tiles(64, 60, 66) +
-            text(64, 218, 'Wordle Companion', 50, palette.foreground) +
+            text(64, 218, 'WordlePop', 50, palette.foreground) +
             text(64, 277, 'Play & Stats', 40, palette.foreground) +
             text(
               64,
@@ -359,7 +385,7 @@ async function capture() {
             text(
               64,
               444,
-              "Connect to NYT for today's game.",
+              "Today's board connects automatically.",
               21,
               palette.foreground
             ),

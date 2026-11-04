@@ -29,6 +29,128 @@ beforeEach(() => {
   });
 });
 
+it.each([
+  '',
+  '?compact=1',
+  '?compact=1&controls=1',
+  '?compact=1&controls=1&popout=1',
+])(
+  'automatically connects today and keeps only Pop out below the keyboard in %s',
+  async (query) => {
+    window.history.replaceState(null, '', `/${query}`);
+    window.matchMedia = jest.fn().mockReturnValue({ matches: false });
+    Object.assign(chrome.storage, {
+      onChanged: { addListener: jest.fn(), removeListener: jest.fn() },
+    });
+    const session: PlaySession = {
+      date: '2026-11-02',
+      mode: 'live',
+      status: 'playing',
+      rows: [],
+      draft: '',
+      canPlay: true,
+    };
+    (chrome.runtime.sendMessage as jest.Mock).mockImplementation((message) => {
+      if (message.type === MessageType.GET_PLAY_CATALOG)
+        return Promise.resolve({
+          success: true,
+          today: session.date,
+          date: session.date,
+          history: [{ date: session.date, played: false }],
+        });
+      if (message.type === MessageType.GET_PLAY_SESSION)
+        return Promise.resolve({ success: true, session });
+      if (message.type === MessageType.CONNECT_NYT_PLAY)
+        return Promise.resolve({
+          success: true,
+          session: { ...session, nytTabId: 42 },
+        });
+      return Promise.resolve({ success: true });
+    });
+    const { container } = render(<GamePlay />);
+    const popout = await screen.findByRole('button', { name: 'Pop out' });
+    await waitFor(() => expect(popout).toBeEnabled());
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Type A' })).toBeEnabled()
+    );
+    expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({
+      type: MessageType.CONNECT_NYT_PLAY,
+      date: session.date,
+    });
+    expect(
+      screen.queryByRole('button', { name: /Connect NYT|Sync NYT|Open NYT/ })
+    ).not.toBeInTheDocument();
+    const actions = popout.parentElement!;
+    expect(
+      within(actions)
+        .getAllByRole('button')
+        .map((button) => button.textContent)
+    ).toEqual(['Pop out']);
+    const keyboard = container.querySelector('.play-keyboard')!;
+    expect(
+      keyboard.compareDocumentPosition(actions) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+    fireEvent.click(within(actions).getByRole('button', { name: 'Pop out' }));
+    await waitFor(() =>
+      expect(chrome.runtime.sendMessage).toHaveBeenCalledWith(
+        expect.objectContaining({ type: MessageType.OPEN_PLAY_WINDOW })
+      )
+    );
+  }
+);
+
+it('keeps NYT failures visible and retries automatically when reopened', async () => {
+  window.history.replaceState(null, '', '/');
+  window.matchMedia = jest.fn().mockReturnValue({ matches: false });
+  Object.assign(chrome.storage, {
+    onChanged: { addListener: jest.fn(), removeListener: jest.fn() },
+  });
+  const session: PlaySession = {
+    date: '2026-11-02',
+    mode: 'live',
+    status: 'playing',
+    rows: [],
+    draft: '',
+    canPlay: true,
+  };
+  let unavailable = true;
+  (chrome.runtime.sendMessage as jest.Mock).mockImplementation((message) => {
+    if (message.type === MessageType.GET_PLAY_CATALOG)
+      return Promise.resolve({
+        success: true,
+        today: session.date,
+        date: session.date,
+        history: [{ date: session.date, played: false }],
+      });
+    if (message.type === MessageType.GET_PLAY_SESSION)
+      return Promise.resolve({ success: true, session });
+    if (message.type === MessageType.CONNECT_NYT_PLAY)
+      return unavailable
+        ? Promise.reject(new Error('Finish the prompts in the NYT tab.'))
+        : Promise.resolve({
+            success: true,
+            session: { ...session, nytTabId: 42 },
+          });
+    return Promise.resolve({ success: true });
+  });
+  const view = render(<GamePlay />);
+  expect(await screen.findByRole('alert')).toHaveTextContent(
+    'Finish the prompts in the NYT tab.'
+  );
+  expect(screen.getByRole('button', { name: 'Type A' })).toBeDisabled();
+  expect(
+    screen.queryByRole('button', { name: /Connect NYT|Sync NYT|Open NYT/ })
+  ).not.toBeInTheDocument();
+  view.unmount();
+  unavailable = false;
+  render(<GamePlay />);
+  await waitFor(() =>
+    expect(screen.getByRole('button', { name: 'Type A' })).toBeEnabled()
+  );
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+});
+
 it('replaces the keyboard with completed comparisons and preserves the board', async () => {
   window.history.replaceState(null, '', '/');
   window.matchMedia = jest.fn().mockReturnValue({ matches: true });
@@ -72,6 +194,9 @@ it('replaces the keyboard with completed comparisons and preserves the board', a
   render(<GamePlay />);
   const board = await screen.findByRole('group', { name: 'Wordle board' });
   await waitFor(() => expect(board).toHaveAttribute('data-ready', 'true'));
+  expect(chrome.runtime.sendMessage).not.toHaveBeenCalledWith(
+    expect.objectContaining({ type: MessageType.CONNECT_NYT_PLAY })
+  );
   fireEvent.keyDown(board, { key: 'Enter' });
   const summary = await screen.findByRole('region', {
     name: 'Completed game comparisons',
@@ -320,7 +445,8 @@ it('preserves newer typing across stale live poll responses without carrying dra
       });
     if (message.type === MessageType.GET_PLAY_SESSION)
       return Promise.resolve({ success: true, session });
-    if (message.type === MessageType.CONNECT_NYT_PLAY) return poll;
+    if (message.type === MessageType.CONNECT_NYT_PLAY)
+      return message.poll ? poll : Promise.resolve({ success: true, session });
     if (message.type === MessageType.SAVE_PLAY_DRAFT) return saved;
     return Promise.resolve({ success: true });
   });

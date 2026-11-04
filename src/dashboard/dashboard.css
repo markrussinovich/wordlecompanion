@@ -128,7 +128,7 @@ html[data-theme="dark"] {
 .tooltip-comparisons span:nth-child(even) { text-align: right; font-weight: 800; }
 .timeline-controls select { padding: 6px 8px; border: 2px solid var(--cp-border); border-radius: 4px; background: var(--cp-surface); color: var(--cp-text); font: inherit; font-size: 12px; font-weight: 700; }
 
-/* Wordle Stat Explorer Dashboard Styles */
+/* WordlePop Dashboard Styles */
 /* NYT Wordle look: bold Franklin-style type, square tiles, green/yellow/gray accents. */
 
 * {

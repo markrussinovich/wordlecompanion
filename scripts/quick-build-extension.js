@@ -153,6 +153,11 @@ async function buildExtension() {
 async function packageForStore(distDir) {
   console.log('\nPackaging extension for Chrome Web Store...');
 
+  const legacyPopup = resolve(distDir, 'src', 'extension', 'popup', 'index.html');
+  if (existsSync(legacyPopup)) {
+    unlinkSync(legacyPopup);
+  }
+
   const listingDir = resolve(rootDir, 'listing');
   const latestBuildDir = resolve(listingDir, 'latest-build');
 
@@ -174,7 +179,7 @@ async function packageForStore(distDir) {
     console.warn('⚠ Unable to read manifest version, defaulting to "unversioned".', error.message);
   }
 
-  const zipName = `wordle-companion-${version}.zip`;
+  const zipName = `wordlepop-${version}.zip`;
   const zipPath = resolve(latestBuildDir, zipName);
 
   if (existsSync(zipPath)) {

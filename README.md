@@ -1,4 +1,4 @@
-# Wordle Companion — Play & Stats
+# WordlePop — Play & Stats
 
 Play Wordle and explore your WordleBot history in one Chrome/Edge extension. Resume puzzles in the toolbar popup, persistent pop-out, or dashboard; track your progress and compare results with NYT readers and a local solver.
 
@@ -16,11 +16,11 @@ Play Wordle and explore your WordleBot history in one Chrome/Edge extension. Res
 
 Turn on **Show unplayed** in the popup or Individual Games section, then open a blank date. There is no separate Play button or text editor: type into the board or click the keyboard. The dashboard's **Play Wordle** link also opens a dedicated view with a puzzle dropdown. **Pop out** opens a persistent Wordle-themed window that stays open when the toolbar popup closes.
 
-| Puzzle                          | Feedback and persistence                                                                                                                                                                                                                              |
-| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Past, unplayed date             | The extension uses an available imported answer or retrieves that date's puzzle from NYT, then scores guesses locally with duplicate-letter handling. Replays do **not** update your NYT account or official history.                                 |
-| Today's unplayed date           | Choose **Connect NYT**. Guesses are sent to the actual NYT game tab, and the extension displays the site's real feedback. Today's answer is not fetched or scored locally. Keep that tab available; NYT login or site dialogs may require opening it. |
-| Date with an existing user game | Read-only review and comparisons; the extension does not replace your imported result.                                                                                                                                                                |
+| Puzzle                          | Feedback and persistence                                                                                                                                                                                                                                                                    |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Past, unplayed date             | The extension uses an available imported answer or retrieves that date's puzzle from NYT, then scores guesses locally with duplicate-letter handling. Replays do **not** update your NYT account or official history.                                                                       |
+| Today's unplayed date           | Connects automatically to the actual NYT game tab. Guesses and completion are recorded by NYT as you play, and the extension displays the site's real feedback. Today's answer is not fetched or scored locally. Keep that tab available; NYT login or site dialogs may require opening it. |
+| Date with an existing user game | Read-only review and comparisons; the extension does not replace your imported result.                                                                                                                                                                                                      |
 
 Incomplete extension sessions remain playable and can be resumed. Completed sessions appear in game browsing, dashboard timelines, and statistics, but extension progress stays separate from imported game records. The replay dictionary is not NYT's official guess list, so historical replays can accept words that the live NYT game rejects. Connecting to today's board is not a guarantee of signed-in account synchronization; NYT controls its own persistence.
 
@@ -40,7 +40,7 @@ Screenshots use synthetic demo history, not personal game records.
 
 ![Unplayed dashboard tiles with embedded gameplay alongside played-game comparisons](listing/assets/screenshot-03-solver-games.png)
 
-![Historical replay and today's NYT connection controls in the extension popup](listing/assets/screenshot-04-popup.png)
+![Historical replay and today's official NYT gameplay in the extension popup](listing/assets/screenshot-04-popup.png)
 
 ![Dedicated puzzle picker, Wordle board, and keyboard](listing/assets/screenshot-05-play.png)
 

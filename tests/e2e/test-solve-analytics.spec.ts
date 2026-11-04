@@ -422,7 +422,7 @@ test('real solver worker, chart, tiles, reader persistence and cached reload wor
   ).toBeHidden();
   await page.getByRole('link', { name: 'Overview', exact: true }).click();
   await expect(
-    page.getByRole('heading', { name: 'Wordle Companion', exact: true })
+    page.getByRole('heading', { name: 'WordlePop', exact: true })
   ).toBeVisible();
   await expect(page.locator('.solve-games details')).toHaveCount(3);
   await selectRange(0.5);

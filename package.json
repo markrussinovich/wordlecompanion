@@ -1,6 +1,6 @@
 {
-  "name": "wordle-companion",
-  "version": "1.1.1",
+  "name": "wordlepop",
+  "version": "1.1.2",
   "description": "Play unplayed Wordle puzzles in your popup or dashboard, track stats, and compare with NYT readers and a local solver.",
   "type": "module",
   "scripts": {
