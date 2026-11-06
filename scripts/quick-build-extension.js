@@ -2,7 +2,7 @@
 import esbuild from 'esbuild';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { copyFileSync, existsSync, mkdirSync, cpSync, createWriteStream, readFileSync, unlinkSync } from 'fs';
+import { copyFileSync, existsSync, mkdirSync, cpSync, createWriteStream, readFileSync, readdirSync, unlinkSync } from 'fs';
 import { execSync } from 'child_process';
 import archiver from 'archiver';
 import convertIcons from './convert-icons.js';
@@ -80,6 +80,15 @@ async function buildExtension() {
     
     // Build dashboard using Vite
     console.log('Building dashboard with Vite...');
+    // Hashed vendor chunks from older dependencies must not enter the new package.
+    const chunksDir = resolve(distDir, 'chunks');
+    if (existsSync(chunksDir)) {
+      for (const entry of readdirSync(chunksDir, { withFileTypes: true })) {
+        if (entry.isFile() && entry.name.endsWith('.js')) {
+          unlinkSync(resolve(chunksDir, entry.name));
+        }
+      }
+    }
     execSync('npm run build:dashboard', { stdio: 'inherit', cwd: rootDir });
     console.log('✓ dashboard built\n');
     

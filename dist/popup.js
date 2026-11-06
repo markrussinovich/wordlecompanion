@@ -13,8 +13,7 @@
   // src/utils/solveComparison.ts
   function userTurns(game) {
     const attempts = game.attempts ?? game.guesses;
-    if (!attempts || attempts < 1)
-      return game.completed && !game.won ? 7 : null;
+    if (!attempts || attempts < 1) return game.completed && !game.won ? 7 : null;
     return game.won && attempts <= 6 ? attempts : 7;
   }
 
@@ -28,8 +27,7 @@
   // src/utils/playHistory.ts
   var SHOW_UNPLAYED_KEY = "wordleShowUnplayed";
   function hasUserGame(game) {
-    if (!game)
-      return false;
+    if (!game) return false;
     const guesses = game.guesses;
     return Boolean(
       game.won || game.completed || typeof game.attempts === "number" && game.attempts > 0 || typeof guesses === "number" && guesses > 0 || game.guessPattern?.some(
@@ -88,11 +86,9 @@
   var stagger = 200;
   function shakeGuess(board, index) {
     const row = board?.children[index];
-    if (!row || matchMedia("(prefers-reduced-motion: reduce)").matches)
-      return;
+    if (!row || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     row.getAnimations().forEach((animation2) => {
-      if (animation2.id === "wordle-invalid-guess")
-        animation2.cancel();
+      if (animation2.id === "wordle-invalid-guess") animation2.cancel();
     });
     const animation = row.animate(
       [0, -5, 5, -5, 5, -3, 3, -1, 1, 0].map((offset) => ({
@@ -142,8 +138,7 @@
       });
       const now = performance.now();
       const ready = board.dataset.ready === "true";
-      if (previous?.puzzle !== puzzle)
-        clear();
+      if (previous?.puzzle !== puzzle) clear();
       if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
         clear();
         previous = { puzzle, rows, ready };
@@ -276,21 +271,17 @@
     let fittedPopoutHeight = null;
     let controlsHeightReady = false;
     let initialDate = params.get("date");
-    if (popout)
-      document.documentElement.dataset.popout = "true";
-    if (embedded)
-      document.documentElement.dataset.embedded = "true";
+    if (popout) document.documentElement.dataset.popout = "true";
+    if (embedded) document.documentElement.dataset.embedded = "true";
     const historyReady = chrome.storage.local.get([SHOW_UNPLAYED_KEY, PLAY_SESSIONS_KEY, PLAY_SELECTION_KEY]).then((stored) => {
       showUnplayed = embedded || popout || stored[SHOW_UNPLAYED_KEY] === true;
       playSessions = stored[PLAY_SESSIONS_KEY] || {};
-      if (popout)
-        initialDate = stored[PLAY_SELECTION_KEY];
+      if (popout) initialDate = stored[PLAY_SELECTION_KEY];
     }).catch(() => {
     });
     function rebuildHistory() {
       allGames = buildGameHistory(gamesWithPlaySessions(recordedGames, playSessions), showUnplayed);
-      if (embedded)
-        allGames = allGames.filter((game) => game.date === initialDate);
+      if (embedded) allGames = allGames.filter((game) => game.date === initialDate);
     }
     function changeUnplayed(value) {
       const date = allGames[currentGameIndex]?.date;
@@ -305,10 +296,8 @@
       saveCurrentGameIndex();
     }
     chrome.storage.onChanged?.addListener((changes, area) => {
-      if (area !== "local")
-        return;
-      if (changes[SHOW_UNPLAYED_KEY] && !embedded)
-        changeUnplayed(changes[SHOW_UNPLAYED_KEY].newValue === true);
+      if (area !== "local") return;
+      if (changes[SHOW_UNPLAYED_KEY] && !embedded) changeUnplayed(changes[SHOW_UNPLAYED_KEY].newValue === true);
       if (changes[PLAY_SESSIONS_KEY]) {
         const date = allGames[currentGameIndex]?.date;
         playSessions = changes[PLAY_SESSIONS_KEY].newValue || {};
@@ -320,18 +309,15 @@
           calculateReaderAverages();
         }
       }
-      if (changes.games)
-        loadStatistics();
+      if (changes.games) loadStatistics();
       if (popout && changes[PLAY_SELECTION_KEY]) {
         const index = allGames.findIndex((game) => game.date === changes[PLAY_SELECTION_KEY].newValue);
-        if (index >= 0 && index !== currentGameIndex)
-          showGame(index);
+        if (index >= 0 && index !== currentGameIndex) showGame(index);
       }
     });
     window.addEventListener("message", (event) => {
       const frame = document.getElementById("popup-play-controls");
-      if (event.origin !== window.location.origin || event.source !== frame?.contentWindow)
-        return;
+      if (event.origin !== window.location.origin || event.source !== frame?.contentWindow) return;
       if (event.data?.type === "WORDLE_PLAY_SIZE") {
         const height = event.data.height;
         if ((embedded || popout) && Number.isFinite(height) && height > 0 && height <= 600) {
@@ -345,8 +331,7 @@
         navigateGame(event.data.key);
         return;
       }
-      if (event.data?.type !== "WORDLE_PLAY_VIEW")
-        return;
+      if (event.data?.type !== "WORDLE_PLAY_VIEW") return;
       if (event.data.session?.date !== allGames[currentGameIndex]?.date) {
         if (playing && frame?.dataset.date)
           frame.contentWindow.postMessage({ type: "WORDLE_PLAY_DATE", date: frame.dataset.date }, window.location.origin);
@@ -364,27 +349,20 @@
         document.getElementById("popup-game-board")?.focus({ preventScroll: true });
     });
     document.addEventListener("keydown", (event) => {
-      if (event.defaultPrevented || event.isComposing || event.ctrlKey || event.metaKey || event.altKey)
-        return;
+      if (event.defaultPrevented || event.isComposing || event.ctrlKey || event.metaKey || event.altKey) return;
       const target = event.target;
-      if (target.isContentEditable || target.closest?.('textarea, select, input:not([type="checkbox"]):not([type="radio"]), [role="textbox"]'))
-        return;
+      if (target.isContentEditable || target.closest?.('textarea, select, input:not([type="checkbox"]):not([type="radio"]), [role="textbox"]')) return;
       if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
-        if (!historyLoaded || !allGames.length || target.closest?.('input[type="radio"]'))
-          return;
+        if (!historyLoaded || !allGames.length || target.closest?.('input[type="radio"]')) return;
         event.preventDefault();
         navigateGame(event.key);
         return;
       }
-      if (!playing)
-        return;
-      if (event.key === "Enter" && target.closest?.("button, a[href], input"))
-        return;
-      if (!(/^[a-z]$/i.test(event.key) || event.key === "Backspace" || event.key === "Enter"))
-        return;
+      if (!playing) return;
+      if (event.key === "Enter" && target.closest?.("button, a[href], input")) return;
+      if (!(/^[a-z]$/i.test(event.key) || event.key === "Backspace" || event.key === "Enter")) return;
       const frame = document.getElementById("popup-play-controls");
-      if (!frame?.contentWindow)
-        return;
+      if (!frame?.contentWindow) return;
       event.preventDefault();
       frame.contentWindow.postMessage({
         type: "WORDLE_PLAY_KEY",
@@ -403,17 +381,14 @@
       flushSolverCache();
     });
     function flushSolverCache() {
-      if (cacheWriteTimer === null)
-        return;
+      if (cacheWriteTimer === null) return;
       clearTimeout(cacheWriteTimer);
       cacheWriteTimer = null;
       const results = { ...solverResults };
       cacheWrites = cacheWrites.then(async () => {
-        if (!chrome.runtime || "id" in chrome.runtime && !chrome.runtime.id)
-          return;
+        if (!chrome.runtime || "id" in chrome.runtime && !chrome.runtime.id) return;
         const stored = await chrome.storage.local.get(solverCacheKey);
-        if (!chrome.runtime || "id" in chrome.runtime && !chrome.runtime.id)
-          return;
+        if (!chrome.runtime || "id" in chrome.runtime && !chrome.runtime.id) return;
         await chrome.storage.local.set({
           [solverCacheKey]: { ...stored[solverCacheKey], ...results }
         });
@@ -423,32 +398,26 @@
       });
     }
     function scheduleSolverCacheWrite() {
-      if (!cacheWriteTimer)
-        cacheWriteTimer = setTimeout(flushSolverCache, 2e3);
+      if (!cacheWriteTimer) cacheWriteTimer = setTimeout(flushSolverCache, 2e3);
     }
     function needsReaderAverage(game) {
       const average = game.nytReaderAverage;
-      if (!(Number.isFinite(average) && average >= 1 && average <= 7))
-        return true;
-      if (game.nytReaderMode !== (game.hardMode ? "hard" : "normal"))
-        return true;
+      if (!(Number.isFinite(average) && average >= 1 && average <= 7)) return true;
+      if (game.nytReaderMode !== (game.hardMode ? "hard" : "normal")) return true;
       const cutoff = /* @__PURE__ */ new Date();
       cutoff.setDate(cutoff.getDate() - 2);
       const recent = `${cutoff.getFullYear()}-${String(cutoff.getMonth() + 1).padStart(2, "0")}-${String(cutoff.getDate()).padStart(2, "0")}`;
       return game.date >= recent;
     }
     async function calculateReaderAverages() {
-      if (readerFetchRunning)
-        return;
+      if (readerFetchRunning) return;
       readerFetchRunning = true;
       try {
         const current = allGames[currentGameIndex];
         for (const game of [current, ...allGames]) {
-          if (!game?.solution || game.nytReaderSource === "manual" || !needsReaderAverage(game))
-            continue;
+          if (!game?.solution || game.nytReaderSource === "manual" || !needsReaderAverage(game)) continue;
           const key = `${game.date}:${game.hardMode}`;
-          if (attemptedReaders.has(key))
-            continue;
+          if (attemptedReaders.has(key)) continue;
           attemptedReaders.add(key);
           try {
             const response = await chrome.runtime.sendMessage({
@@ -473,8 +442,7 @@
     }
     async function calculateSolverResults() {
       await solverCacheReady;
-      if (solverWorker || solverError)
-        return;
+      if (solverWorker || solverError) return;
       const current = allGames[currentGameIndex];
       const solutions = [...new Set([current, ...allGames].flatMap((game) => game?.solution ? [game.solution.trim().toUpperCase()] : []))].filter((solution) => !solverResults[solution]);
       if (!solutions.length) {
@@ -496,8 +464,7 @@
             scheduleSolverCacheWrite();
             render();
           }
-          if (data.error)
-            fail(data.error);
+          if (data.error) fail(data.error);
           else if (data.complete) {
             flushSolverCache();
             solverWorker.terminate();
@@ -521,25 +488,20 @@
     let renderedHtml = "";
     let renderedViewerHtml = "";
     function fitPopoutWindow() {
-      if (!popout || !historyLoaded || isLoading || (playing ? playBusy || !playSession || !controlsHeightReady : !statistics))
-        return;
+      if (!popout || !historyLoaded || isLoading || (playing ? playBusy || !playSession || !controlsHeightReady : !statistics)) return;
       requestAnimationFrame(() => {
         const bounds = container.firstElementChild?.getBoundingClientRect();
         const main = container.querySelector(".popup-main");
         const contentHeight = bounds && main ? bounds.height + Math.max(0, main.scrollHeight - main.clientHeight) : 0;
-        if (!contentHeight)
-          return;
+        if (!contentHeight) return;
         chrome.windows.getCurrent().then((current) => {
-          if (current.type !== "popup" || current.id === void 0 || !current.height)
-            return;
-          if (popoutSized && (fittedPopoutHeight === null || Math.abs(current.height - fittedPopoutHeight) > 4))
-            return;
+          if (current.type !== "popup" || current.id === void 0 || !current.height) return;
+          if (popoutSized && (fittedPopoutHeight === null || Math.abs(current.height - fittedPopoutHeight) > 4)) return;
           const frameHeight = Math.max(0, current.height - window.innerHeight);
           const height = Math.min(Math.ceil(contentHeight + frameHeight), screen.availHeight);
           popoutSized = true;
           fittedPopoutHeight = height;
-          if (Math.abs(height - current.height) <= 1)
-            return;
+          if (Math.abs(height - current.height) <= 1) return;
           return chrome.windows.update(current.id, { height });
         }).catch((error) => console.warn("[Popup] Could not fit pop-out window:", error));
       });
@@ -560,8 +522,7 @@
           renderedViewerHtml = viewerHtml;
           container.querySelector(".game-viewer").outerHTML = viewerHtml;
           attachGameViewerListeners();
-          if (boardFocused)
-            document.getElementById("popup-game-board")?.focus({ preventScroll: true });
+          if (boardFocused) document.getElementById("popup-game-board")?.focus({ preventScroll: true });
           revealGuesses(document.getElementById("popup-game-board"));
         }
         fitPopoutWindow();
@@ -602,8 +563,7 @@
         </footer>
       </div>
     `;
-      if (html === renderedHtml && container.firstElementChild)
-        return;
+      if (html === renderedHtml && container.firstElementChild) return;
       renderedHtml = html;
       renderedViewerHtml = viewerHtml;
       controlsHeightReady = false;
@@ -690,10 +650,8 @@
             const fallbackUrl = chrome.runtime.getURL("dashboard.html") + (playing ? "#/play" : "");
             chrome.tabs.create({ url: fallbackUrl });
           }).finally(() => {
-            if (popout)
-              dashboardBtn.disabled = false;
-            else
-              window.close();
+            if (popout) dashboardBtn.disabled = false;
+            else window.close();
           });
         });
       }
@@ -731,14 +689,12 @@
       const nextBtn = document.getElementById("next-game-btn");
       if (prevBtn) {
         prevBtn.addEventListener("click", () => {
-          if (currentGameIndex < allGames.length - 1)
-            showGame(currentGameIndex + 1);
+          if (currentGameIndex < allGames.length - 1) showGame(currentGameIndex + 1);
         });
       }
       if (nextBtn) {
         nextBtn.addEventListener("click", () => {
-          if (currentGameIndex > 0)
-            showGame(currentGameIndex - 1);
+          if (currentGameIndex > 0) showGame(currentGameIndex - 1);
         });
       }
       document.getElementById("latest-game-btn")?.addEventListener("click", () => showGame(0));
@@ -749,8 +705,7 @@
     }
     function navigateGame(key) {
       const index = currentGameIndex + (key === "ArrowLeft" ? 1 : -1);
-      if (historyLoaded && index >= 0 && index < allGames.length)
-        showGame(index);
+      if (historyLoaded && index >= 0 && index < allGames.length) showGame(index);
     }
     function showGame(index) {
       currentGameIndex = index;
@@ -791,8 +746,7 @@
           if (!historyLoaded) {
             await loadCurrentGameIndex();
             const requestedIndex = allGames.findIndex((game) => game.date === initialDate);
-            if (requestedIndex >= 0)
-              currentGameIndex = requestedIndex;
+            if (requestedIndex >= 0) currentGameIndex = requestedIndex;
           }
           historyLoaded = true;
           if (currentGameIndex >= allGames.length) {
@@ -837,8 +791,7 @@
             message: `${message.errors} game${message.errors === 1 ? "" : "s"} could not be imported. Refresh to retry.`,
             icon: "\u26A0\uFE0F"
           };
-        } else
-          activeNotification = null;
+        } else activeNotification = null;
         console.log(`[Popup] Scrape complete - ${message.newGames} new games, ${message.totalGames} total checked`);
         if (message.newGames > 0) {
           currentGameIndex = 0;
@@ -926,8 +879,7 @@
       }
     }
     function detectLargestGap(games) {
-      if (games.length < 2)
-        return { gapDays: 0 };
+      if (games.length < 2) return { gapDays: 0 };
       const dates = games.map((g) => g.date).filter((d) => d).sort();
       let largestGap = 0;
       let gapStart = null;
@@ -948,8 +900,7 @@
       try {
         const result = await chrome.storage.local.get(["games"]);
         const games = result.games || [];
-        if (games.length < 2)
-          return false;
+        if (games.length < 2) return false;
         const { gapDays, gapStart, gapEnd } = detectLargestGap(games);
         console.log(`[Popup] Largest gap: ${gapDays} days (${gapStart} \u2192 ${gapEnd})`);
         if (gapDays > 1) {
@@ -1203,11 +1154,9 @@
     `;
     }
     function normalizeGuessStatus(rawStatus) {
-      if (!rawStatus)
-        return "absent";
+      if (!rawStatus) return "absent";
       const lower = rawStatus.toLowerCase();
-      if (lower.includes("incorrect") || lower.includes("absent"))
-        return "absent";
+      if (lower.includes("incorrect") || lower.includes("absent")) return "absent";
       if (lower.includes("correct") || lower.includes("right") || lower.includes("exact")) {
         return "correct";
       }

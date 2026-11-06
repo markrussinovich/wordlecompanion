@@ -48,7 +48,7 @@ Screenshots use synthetic demo history, not personal game records.
 
 ## Install in Chrome/Edge
 
-1. Run `npm install`, then `npm run build:extension` to produce a typechecked build in `dist/`.
+1. With Node.js **20.9 or later**, run `npm ci`, then `npm run build:extension` to produce a typechecked build in `dist/`.
 2. Navigate to `chrome://extensions` (or `edge://extensions`).
 3. Enable **Developer mode**.
 4. Click **Load unpacked** and select the project’s `dist/` folder.
@@ -62,6 +62,7 @@ Manifest V3 background/content/popup code lives in `src\extension`; the React/Vi
 npm test
 npm run lint
 npm run build:extension
+npx playwright install chromium
 npm run test:e2e
 ```
 

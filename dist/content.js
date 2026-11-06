@@ -1,10 +1,7 @@
 var WordleContent = (() => {
   var __defProp = Object.defineProperty;
   var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-  var __publicField = (obj, key, value) => {
-    __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
-    return value;
-  };
+  var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
 
   // src/types/playTypes.ts
   function localPuzzleDate(now = /* @__PURE__ */ new Date()) {
@@ -117,8 +114,7 @@ var WordleContent = (() => {
       ).find(
         (button) => /^Continue to Wordle/.test(button.textContent?.trim() || "")
       );
-      if (start && !start.disabled)
-        start.click();
+      if (start && !start.disabled) start.click();
       if (continuation && !continuation.disabled && continuation.getAttribute("aria-disabled") !== "true")
         continuation.click();
       await delay(300);
@@ -133,8 +129,7 @@ var WordleContent = (() => {
         "The daily puzzle changed. Reload the NYT tab before connecting."
       );
     if (message.type === "NYT_PLAY_STATE" /* NYT_PLAY_STATE */) {
-      if (message.prepare)
-        await prepareGame();
+      if (message.prepare) await prepareGame();
       return { success: true, rows: readNytRows() };
     }
     await dismissHelp();
@@ -186,8 +181,7 @@ var WordleContent = (() => {
         )
       );
       const updated = readNytRows();
-      if (updated.length > rows.length)
-        return { success: true, rows: updated };
+      if (updated.length > rows.length) return { success: true, rows: updated };
       const toast = visibleToast();
       if (toast) {
         const error = toast.textContent.trim();
@@ -237,8 +231,7 @@ var WordleContent = (() => {
       this.init();
     }
     async init() {
-      if (this.isInitialized)
-        return;
+      if (this.isInitialized) return;
       console.log("[WordleContent] Initializing Wordle integration...");
       if (document.readyState === "loading") {
         document.addEventListener("DOMContentLoaded", () => this.setupIntegration());
@@ -310,18 +303,15 @@ var WordleContent = (() => {
       try {
         const completionModal = document.querySelector('[data-testid="toast"]') || document.querySelector(".Toast-module_toast") || document.querySelector(".game-modal");
         const gameBoard = this.getGameBoard();
-        if (!gameBoard)
-          return null;
+        if (!gameBoard) return null;
         const rows = gameBoard.querySelectorAll('[data-testid^="row"]') || gameBoard.querySelectorAll(".Row-module_row") || gameBoard.querySelectorAll('div[role="grid"] > div');
-        if (rows.length === 0)
-          return null;
+        if (rows.length === 0) return null;
         let guesses = 0;
         let isComplete = false;
         let isWon = false;
         Array.from(rows).forEach((row, index) => {
           const tiles = row.querySelectorAll('[data-testid^="tile"]') || row.querySelectorAll(".Tile-module_tile") || row.querySelectorAll("div[data-state]");
-          if (tiles.length === 0)
-            return;
+          if (tiles.length === 0) return;
           const rowHasContent = Array.from(tiles).some((tile) => {
             const letter = tile.textContent?.trim();
             return letter && letter.length > 0;
@@ -359,8 +349,7 @@ var WordleContent = (() => {
             }
           }
         }
-        if (!isComplete)
-          return null;
+        if (!isComplete) return null;
         return {
           isComplete,
           isWon,

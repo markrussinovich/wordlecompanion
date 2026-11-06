@@ -11,7 +11,9 @@ This directory contains the marketing copy, asset briefs, and release packaging 
 - `assets/` – current screenshots and promotional images generated from the extension with synthetic demo history, plus capture guidance.
 - `latest-build/` – populated automatically once `npm run build:quick` (or `node scripts/quick-build-extension.js`) finishes. Contains a versioned ZIP that you can upload to the Chrome Web Store dashboard.
 
-Current release package: `latest-build/wordlepop-1.1.2.zip` (not uploaded or submitted).
+Current release package: `latest-build/wordlepop-1.1.3.zip` (not uploaded or submitted).
+
+Version 1.1.3 updates vulnerable runtime and development dependencies. The previous `wordlepop-1.1.2.zip` remains unchanged.
 
 The previously submitted `latest-build/wordle-companion-1.1.1.zip` is preserved unchanged.
 

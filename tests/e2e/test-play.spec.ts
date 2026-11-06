@@ -737,11 +737,21 @@ test('played pop-out fits its content without a gap above or below the footer', 
       expect(Math.abs(gaps.below)).toBeLessThanOrEqual(4);
       expect(gaps.overflow).toBeLessThanOrEqual(1);
     }).toPass({ timeout: 5000 });
-    const boardGeometry = () =>
-      popout.locator('#popup-game-board').evaluate((element) => {
-        const { x, y, width, height } = element.getBoundingClientRect();
-        return { x, y, width, height };
-      });
+    const boardGeometry = async () => {
+      let bounds = { x: 0, y: 0, width: 0, height: 0 };
+      await expect
+        .poll(async () => {
+          bounds = await popout
+            .locator('#popup-game-board')
+            .evaluate((element) => {
+              const { x, y, width, height } = element.getBoundingClientRect();
+              return { x, y, width, height };
+            });
+          return bounds.width;
+        })
+        .toBeGreaterThan(0);
+      return bounds;
+    };
     const board = await boardGeometry();
     await popout.reload();
     await expect(popout.locator('.stats-grid')).toBeVisible();

@@ -1,9 +1,6 @@
 var __defProp = Object.defineProperty;
 var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __publicField = (obj, key, value) => {
-  __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
-  return value;
-};
+var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
 
 // src/utils/mergeGames.ts
 function mergeGames(existing, incoming) {
@@ -31,16 +28,14 @@ function resolveEnvFlag() {
   try {
     if (typeof import.meta !== "undefined" && import.meta?.env) {
       const val = import.meta.env.VITE_DEBUG_LOGS;
-      if (val != null)
-        return val === "true" || val === true;
+      if (val != null) return val === "true" || val === true;
     }
   } catch {
   }
   try {
     if (typeof process !== "undefined" && process?.env) {
       const v = process.env.VITE_DEBUG_LOGS;
-      if (v != null)
-        return v === "true";
+      if (v != null) return v === "true";
     }
   } catch {
   }
@@ -68,8 +63,7 @@ function prefix() {
 }
 function build(method) {
   return (...args) => {
-    if (enabled)
-      console[method](prefix(), ...args);
+    if (enabled) console[method](prefix(), ...args);
   };
 }
 var logger = {
@@ -107,22 +101,19 @@ var _ExtensionStorage = class _ExtensionStorage {
   }
   async saveGame(game) {
     const result = await this.bulkImportGames([game]);
-    if (result.errors)
-      throw new Error("Game could not be saved");
+    if (result.errors) throw new Error("Game could not be saved");
   }
   async updateReaderAverage(date, readers, hardMode) {
     const operation = this.writeQueue.then(async () => {
       const games = await this.getAllGames();
       const index = games.findIndex((game2) => game2.date === date);
       const game = games[index];
-      if (!game)
-        return null;
+      if (!game) return null;
       if (readers.nytReaderMode !== (hardMode ?? game.hardMode ? "hard" : "normal")) {
         return game;
       }
       const unchanged = (game.nytReaderSource === "manual" || game.nytReaderAverage === readers.nytReaderAverage && game.nytReaderMode === readers.nytReaderMode && game.nytReaderSource === readers.nytReaderSource) && (hardMode === void 0 || game.hardMode === hardMode);
-      if (unchanged)
-        return game;
+      if (unchanged) return game;
       games[index] = {
         ...game,
         ...game.nytReaderSource === "manual" ? {} : readers,
@@ -205,8 +196,7 @@ var _ExtensionStorage = class _ExtensionStorage {
   async getNewestGame() {
     try {
       const games = await this.getAllGames();
-      if (games.length === 0)
-        return null;
+      if (games.length === 0) return null;
       return games.reduce((newest, game) => {
         return new Date(game.date) > new Date(newest.date) ? game : newest;
       });
@@ -270,11 +260,9 @@ function parseNytReaderAverage(summary, hardMode) {
     return null;
   const total = counts.reduce((sum, count) => sum + count, 0);
   const penalty = summary.unsolvedPenalty?.[mode] ?? 0;
-  if (!total || !Number.isFinite(penalty) || penalty < 0)
-    return null;
+  if (!total || !Number.isFinite(penalty) || penalty < 0) return null;
   const average = (counts.reduce((sum, count, index) => sum + count * (index + 1), 0) + penalty) / total;
-  if (!Number.isFinite(average) || average < 1 || average > 7)
-    return null;
+  if (!Number.isFinite(average) || average < 1 || average > 7) return null;
   return {
     nytReaderAverage: average,
     nytReaderMode: mode,
@@ -297,8 +285,7 @@ async function fetchNytReaderAverage(game) {
           `https://static01.nyt.com/newsgraphics/2022/wordlebot/${key}/summary.json`,
           { credentials: "omit", signal: controller.signal }
         );
-        if (!response.ok)
-          return null;
+        if (!response.ok) return null;
         return await response.json();
       } catch {
         return null;
@@ -368,8 +355,7 @@ function playStatus(rows) {
 // src/utils/playHistory.ts
 var SHOW_UNPLAYED_KEY = "wordleShowUnplayed";
 function hasUserGame(game) {
-  if (!game)
-    return false;
+  if (!game) return false;
   const guesses = game.guesses;
   return Boolean(
     game.won || game.completed || typeof game.attempts === "number" && game.attempts > 0 || typeof guesses === "number" && guesses > 0 || game.guessPattern?.some(
@@ -478,8 +464,7 @@ async function replayAnswer(date) {
     throw new Error("Today's answer must come from NYT gameplay.");
   const games = await ExtensionStorage.getInstance().getAllGames();
   const answer = games.find((game) => game.date === date)?.solution?.trim().toUpperCase();
-  if (answer && /^[A-Z]{5}$/.test(answer))
-    return answer;
+  if (answer && /^[A-Z]{5}$/.test(answer)) return answer;
   const key = "wordlePastPuzzles";
   const stored = await chrome.storage.local.get(key);
   const cached = stored[key]?.[date];
@@ -492,8 +477,7 @@ async function replayAnswer(date) {
       `https://www.nytimes.com/svc/wordle/v2/${date}.json`,
       { signal: controller.signal }
     );
-    if (!response.ok)
-      throw new Error("Puzzle unavailable");
+    if (!response.ok) throw new Error("Puzzle unavailable");
     const puzzle = await response.json();
     if (puzzle.print_date !== date || !/^[A-Za-z]{5}$/.test(puzzle.solution))
       throw new Error("Unrecognized puzzle");
@@ -517,8 +501,7 @@ async function liveTab(session, create) {
     url: "https://www.nytimes.com/games/wordle*"
   });
   const tab = tabs.find((item) => item.id === session.nytTabId) || tabs[0];
-  if (tab)
-    return tab;
+  if (tab) return tab;
   if (!create)
     throw new Error("NYT tab unavailable. Reopen this view to retry.");
   return chrome.tabs.create({ url: nytUrl, active: false });
@@ -625,8 +608,7 @@ async function handle(message) {
     return { success: true };
   }
   if (message.type === "GET_PLAY_SESSION" /* GET_PLAY_SESSION */) {
-    if (session.canPlay)
-      await saveSession(session);
+    if (session.canPlay) await saveSession(session);
     await chrome.storage.local.set({ [PLAY_SELECTION_KEY]: date });
     return { success: true, session };
   }
@@ -652,8 +634,7 @@ async function handle(message) {
     if (session.mode !== "live")
       throw new Error("Only today's game connects to NYT.");
     const tab = await liveTab(session, !message.poll);
-    if (tab.id === void 0)
-      throw new Error("Could not open NYT.");
+    if (tab.id === void 0) throw new Error("Could not open NYT.");
     const response = await sendToNyt(
       tab.id,
       {
@@ -697,8 +678,7 @@ async function handle(message) {
         draft: "",
         status: playStatus(rows)
       };
-      if (session.status !== "playing")
-        session.answer = answer;
+      if (session.status !== "playing") session.answer = answer;
     } else {
       const tab = await liveTab(session, false);
       if (tab.id === void 0)
@@ -718,12 +698,10 @@ async function handle(message) {
           applyLive(session, { success: true, rows: response.rows }, tab.id)
         );
       }
-      if (response?.invalidGuess)
-        return response;
+      if (response?.invalidGuess) return response;
       session = applyLive(session, response, tab.id);
     }
-  } else
-    throw new Error("Unknown play request.");
+  } else throw new Error("Unknown play request.");
   await saveSession(session);
   return { success: true, session };
 }
@@ -908,8 +886,7 @@ async function handleGetNytReaderAverage(message) {
     const stored = await chrome.storage.local.get([PLAY_SESSIONS_KEY, PLAY_READER_AVERAGES_KEY]);
     game = gamesWithPlaySessions(games, stored[PLAY_SESSIONS_KEY] || {}, stored[PLAY_READER_AVERAGES_KEY] || {}).find((game2) => game2.date === message.date);
   }
-  if (!game)
-    return { success: true, game: null };
+  if (!game) return { success: true, game: null };
   let hardMode;
   if (typeof message.hardMode === "boolean") {
     const words = game.guessPattern?.map(
@@ -920,8 +897,7 @@ async function handleGetNytReaderAverage(message) {
     }
     hardMode = message.hardMode;
   }
-  if (game.nytReaderSource === "manual")
-    return { success: true, game };
+  if (game.nytReaderSource === "manual") return { success: true, game };
   const readers = await fetchNytReaderAverage({
     ...game,
     hardMode: hardMode ?? game.hardMode
@@ -1231,8 +1207,7 @@ async function handleWordleBotScrapeComplete(message) {
     setTimeout(() => {
       chrome.tabs.remove(completedTabId).catch(() => {
       });
-      if (scraperTabId === completedTabId)
-        scraperTabId = null;
+      if (scraperTabId === completedTabId) scraperTabId = null;
     }, 2e3);
   }
   await updateScrapeStatus({
@@ -1255,8 +1230,7 @@ async function handleWordleBotScrapeComplete(message) {
   }
   const completedAt = currentScrapeStatus.lastUpdated;
   setTimeout(() => {
-    if (currentScrapeStatus.phase !== "complete" || currentScrapeStatus.lastUpdated !== completedAt)
-      return;
+    if (currentScrapeStatus.phase !== "complete" || currentScrapeStatus.lastUpdated !== completedAt) return;
     updateScrapeStatus({
       phase: "idle",
       gamesFound: 0,
@@ -1320,8 +1294,7 @@ async function updateExtensionBadge(games) {
   }
 }
 function filterGamesByTimeFrame(games, timeFrame) {
-  if (timeFrame === "all")
-    return games;
+  if (timeFrame === "all") return games;
   const now = /* @__PURE__ */ new Date();
   const cutoffDate = /* @__PURE__ */ new Date();
   switch (timeFrame) {
@@ -1339,8 +1312,7 @@ function filterGamesByTimeFrame(games, timeFrame) {
   }
   console.log(`[BACKGROUND DEBUG] filterGamesByTimeFrame: Cutoff date for ${timeFrame}: ${cutoffDate.toISOString()}`);
   const filtered = games.filter((game) => {
-    if (!game.date)
-      return false;
+    if (!game.date) return false;
     const gameDate = new Date(game.date);
     return gameDate >= cutoffDate;
   });
@@ -1360,12 +1332,9 @@ function calculateStatistics(games, allGames) {
     };
   }
   const getAttemptCount = (game) => {
-    if (typeof game.attempts === "number")
-      return game.attempts;
-    if (typeof game.guesses === "number")
-      return game.guesses;
-    if (typeof game.steps === "number")
-      return game.steps;
+    if (typeof game.attempts === "number") return game.attempts;
+    if (typeof game.guesses === "number") return game.guesses;
+    if (typeof game.steps === "number") return game.steps;
     return 0;
   };
   const playedGames = games.filter((game) => getAttemptCount(game) > 0);
@@ -1439,10 +1408,8 @@ function compareVersions(version1, version2) {
   for (let i = 0; i < Math.max(v1parts.length, v2parts.length); i++) {
     const v1part = v1parts[i] || 0;
     const v2part = v2parts[i] || 0;
-    if (v1part < v2part)
-      return -1;
-    if (v1part > v2part)
-      return 1;
+    if (v1part < v2part) return -1;
+    if (v1part > v2part) return 1;
   }
   return 0;
 }
@@ -1474,8 +1441,7 @@ async function handleOpenDashboardTab(_message) {
           await chrome.windows.update(existingTab.windowId, { focused: true });
         }
         await chrome.tabs.update(existingTab.id, { active: true, ..._message.page === "play" ? { url: destination } : {} });
-        if (_message.page !== "play")
-          await chrome.tabs.reload(existingTab.id);
+        if (_message.page !== "play") await chrome.tabs.reload(existingTab.id);
         return { success: true, reused: true, tabId: existingTab.id };
       }
     } catch {
@@ -1491,8 +1457,7 @@ async function handleOpenDashboardTab(_message) {
         await chrome.windows.update(tabToUse.windowId, { focused: true });
       }
       await chrome.tabs.update(tabToUse.id, { active: true, ..._message.page === "play" ? { url: destination } : {} });
-      if (_message.page !== "play")
-        await chrome.tabs.reload(tabToUse.id);
+      if (_message.page !== "play") await chrome.tabs.reload(tabToUse.id);
       return { success: true, reused: true, tabId: tabToUse.id };
     }
   } catch (queryError) {
