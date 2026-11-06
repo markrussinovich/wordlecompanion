@@ -35,7 +35,7 @@ it.each([
   '?compact=1&controls=1',
   '?compact=1&controls=1&popout=1',
 ])(
-  'automatically connects today and keeps only Pop out below the keyboard in %s',
+  'automatically connects today and shows Pop out only outside standalone windows in %s',
   async (query) => {
     window.history.replaceState(null, '', `/${query}`);
     window.matchMedia = jest.fn().mockReturnValue({ matches: false });
@@ -68,8 +68,6 @@ it.each([
       return Promise.resolve({ success: true });
     });
     const { container } = render(<GamePlay />);
-    const popout = await screen.findByRole('button', { name: 'Pop out' });
-    await waitFor(() => expect(popout).toBeEnabled());
     await waitFor(() =>
       expect(screen.getByRole('button', { name: 'Type A' })).toBeEnabled()
     );
@@ -80,6 +78,15 @@ it.each([
     expect(
       screen.queryByRole('button', { name: /Connect NYT|Sync NYT|Open NYT/ })
     ).not.toBeInTheDocument();
+    if (query.includes('popout=1')) {
+      expect(
+        screen.queryByRole('button', { name: 'Pop out' })
+      ).not.toBeInTheDocument();
+      expect(container.querySelector('.play-actions')).toBeNull();
+      return;
+    }
+    const popout = await screen.findByRole('button', { name: 'Pop out' });
+    await waitFor(() => expect(popout).toBeEnabled());
     const actions = popout.parentElement!;
     expect(
       within(actions)

@@ -768,23 +768,17 @@ test('played pop-out fits its content without a gap above or below the footer', 
         .locator('.play-keyboard')
         .boundingBox())!;
       const footer = (await popout.locator('.popup-footer').boundingBox())!;
-      const actions = (await controls.locator('.play-actions').boundingBox())!;
-      expect(footer.y - actions.y - actions.height).toBeGreaterThanOrEqual(0);
-      expect(footer.y - actions.y - actions.height).toBeLessThanOrEqual(8);
+      expect(footer.y - keyboard.y - keyboard.height).toBeGreaterThanOrEqual(0);
+      expect(footer.y - keyboard.y - keyboard.height).toBeLessThanOrEqual(8);
       const popoutButton = controls.getByRole('button', {
         name: 'Pop out',
         exact: true,
       });
-      const popoutBounds = (await popoutButton.boundingBox())!;
-      expect(actions.y).toBeGreaterThanOrEqual(keyboard.y + keyboard.height);
-      expect(popoutBounds.x).toBe(actions.x);
+      await expect(popoutButton).toHaveCount(0);
+      await expect(controls.locator('.play-actions')).toHaveCount(0);
       await expect(
         controls.getByRole('button', { name: /Connect NYT|Sync NYT|Open NYT/ })
       ).toHaveCount(0);
-      await expect(popoutButton).toHaveCSS(
-        'background-color',
-        'rgb(106, 170, 100)'
-      );
       expect(
         Math.abs(
           (await popout.evaluate(() => innerHeight)) - footer.y - footer.height
@@ -1241,7 +1235,7 @@ test('real replay stays synchronized in popup, dashboard and persistent pop-out'
     await expect(popout.getByRole('textbox')).toHaveCount(0);
     await expect(
       popoutControls.getByRole('button', { name: 'Pop out', exact: true })
-    ).toBeVisible();
+    ).toHaveCount(0);
     for (const viewport of [
       { width: 424, height: 680 },
       { width: 380, height: 600 },

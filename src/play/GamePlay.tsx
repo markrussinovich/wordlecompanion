@@ -64,6 +64,8 @@ const GamePlay: React.FC = () => {
     new URLSearchParams(window.location.search).get('compact') === '1';
   const controlsOnly =
     new URLSearchParams(window.location.search).get('controls') === '1';
+  const popout =
+    new URLSearchParams(window.location.search).get('popout') === '1';
   const completed =
     !controlsOnly &&
     session?.date === date &&
@@ -796,15 +798,17 @@ const GamePlay: React.FC = () => {
           </section>
         )}
       </div>
-      <div className="play-actions play-popout">
-        <button
-          className="play-popout-primary"
-          disabled={busy || !date}
-          onClick={() => void action(MessageType.OPEN_PLAY_WINDOW)}
-        >
-          Pop out
-        </button>
-      </div>
+      {!popout && (
+        <div className="play-actions play-popout">
+          <button
+            className="play-popout-primary"
+            disabled={busy || !date}
+            onClick={() => void action(MessageType.OPEN_PLAY_WINDOW)}
+          >
+            Pop out
+          </button>
+        </div>
+      )}
     </main>
   );
 };

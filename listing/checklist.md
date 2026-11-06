@@ -1,21 +1,21 @@
 # Pre-Publication Checklist
 
-Use this checklist before submitting **WordlePop — Play & Stats 1.1.3** to the Chrome Web Store. Update the status column as you complete each step.
+Use this checklist before submitting **WordlePop — Play & Stats 1.1.4** to the Chrome Web Store. Update the status column as you complete each step.
 
-| Step                                                                | Status | Owner | Notes                                                                 |
-| ------------------------------------------------------------------- | ------ | ----- | --------------------------------------------------------------------- |
-| Verify manifest version matches marketing copy                      | ☑      |       | WordlePop 1.1.3; package and lockfile agree                           |
-| Run unit tests (`npm test`)                                         | ☑      |       | 106 tests passed                                                      |
-| Run quick build script (`npm run build:quick`)                      | ☑      |       | Typechecked build passed; new WordlePop ZIP generated                 |
-| Manually smoke-test extension from `dist/`                          | ☐      |       | 32 isolated Chrome/Edge checks passed; personal-profile smoke not run |
-| Capture/update screenshots in `listing/assets/`                     | ☑      |       | Five current 1280×800 RGB screenshots reviewed                        |
-| Export promo tile (440×280)                                         | ☑      |       | WordlePop promo and 1400×560 marquee reviewed                         |
-| Update store listing copy in `store-listing.md` if features changed | ☑      |       | New branding and automatic NYT connection; 118-character summary      |
-| Confirm privacy statement matches data usage                        | ☑      |       | Automatic background NYT connection disclosed                         |
-| Provide support URL and contact method                              | ☑      |       | Existing GitHub issues URL retained                                   |
-| Double-check policies (spam, metadata, impersonation)               | ☐      |       | See Chrome Web Store Program Policies                                 |
-| Upload zip to developer dashboard, save draft                       | ☐      |       | New package: `wordlepop-1.1.3.zip`; not uploaded                      |
-| Submit for review                                                   | ☐      |       | WordlePop 1.1.3 has not been submitted                                |
+| Step                                                                | Status | Owner | Notes                                                            |
+| ------------------------------------------------------------------- | ------ | ----- | ---------------------------------------------------------------- |
+| Verify manifest version matches marketing copy                      | ☑      |       | WordlePop 1.1.4; package and lockfile agree                      |
+| Run unit tests (`npm test`)                                         | ☑      |       | 9 focused gameplay tests passed; 106 passed for 1.1.3            |
+| Run quick build script (`npm run build:quick`)                      | ☑      |       | Typechecked build passed; new WordlePop ZIP generated            |
+| Manually smoke-test extension from `dist/`                          | ☐      |       | Personal-profile smoke not run                                   |
+| Capture/update screenshots in `listing/assets/`                     | ☑      |       | Five current 1280×800 RGB screenshots reviewed                   |
+| Export promo tile (440×280)                                         | ☑      |       | WordlePop promo and 1400×560 marquee reviewed                    |
+| Update store listing copy in `store-listing.md` if features changed | ☑      |       | New branding and automatic NYT connection; 118-character summary |
+| Confirm privacy statement matches data usage                        | ☑      |       | Automatic background NYT connection disclosed                    |
+| Provide support URL and contact method                              | ☑      |       | Existing GitHub issues URL retained                              |
+| Double-check policies (spam, metadata, impersonation)               | ☐      |       | See Chrome Web Store Program Policies                            |
+| Upload zip to developer dashboard, save draft                       | ☐      |       | New package: `wordlepop-1.1.4.zip`; not uploaded                 |
+| Submit for review                                                   | ☐      |       | WordlePop 1.1.4 has not been submitted                           |
 
 The earlier Wordle Companion 1.1.1 package was uploaded and submitted November 1, 2026. Its ZIP is preserved unchanged; this checklist tracks the new release, not that prior submission.
 
@@ -33,6 +33,10 @@ The earlier Wordle Companion 1.1.1 package was uploaded and submitted November 1
 - Highlight fixes or new charts in 1–2 bullet points.
 - Mention any onboarding tweaks (e.g., improved NYT login detection).
 - Link back to docs or GitHub for detailed changelog if desired.
+
+### 1.1.4
+
+- Removed the redundant Pop out action from standalone pop-out windows. The toolbar popup and dashboard still offer Pop out.
 
 ### 1.1.3
 
