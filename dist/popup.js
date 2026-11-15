@@ -240,6 +240,7 @@
     let selectedTimeFrame = "7d";
     let isLoading = false;
     let statistics = null;
+    let statisticsRequest = 0;
     let lastGame = null;
     let allGames = [];
     let historyLoaded = false;
@@ -507,6 +508,13 @@
       });
     }
     function render() {
+      const refreshBtn = document.getElementById("refresh-btn");
+      if (refreshBtn) {
+        refreshBtn.disabled = scraperStatus.active;
+        refreshBtn.textContent = `\u21BB ${scraperStatus.active ? "Refreshing..." : "Refresh"}`;
+        refreshBtn.setAttribute("aria-busy", String(scraperStatus.active));
+        refreshBtn.title = scraperStatus.active ? scraperStatus.message : "";
+      }
       playing = Boolean(historyLoaded && allGames[currentGameIndex] && !hasUserGame(allGames[currentGameIndex]));
       const timeFrames = ["7d", "30d", "90d", "all"];
       const frame = document.getElementById("popup-play-controls");
@@ -533,8 +541,9 @@
         <header class="popup-header">
           <div class="popup-header-top">
             <h1>WordlePop</h1>
-            <button class="refresh-btn" id="refresh-btn" ${scraperStatus.active ? "disabled" : ""}>
-              \u21BB Refresh
+            <button class="refresh-btn" id="refresh-btn" aria-busy="${scraperStatus.active}"
+              title="${escapeHtml(scraperStatus.active ? scraperStatus.message : "")}" ${scraperStatus.active ? "disabled" : ""}>
+              \u21BB ${scraperStatus.active ? "Refreshing..." : "Refresh"}
             </button>
           </div>
         </header>
@@ -659,10 +668,13 @@
       if (refreshBtn) {
         refreshBtn.addEventListener("click", async () => {
           if (!refreshBtn.disabled) {
+            activeNotification = null;
+            scraperStatus.active = true;
+            scraperStatus.message = "Checking game history...";
             render();
             const didGapFill = await checkAndFillGaps();
             if (!didGapFill) {
-              triggerIncrementalScrape();
+              await triggerIncrementalScrape();
             }
           }
         });
@@ -716,6 +728,7 @@
       saveCurrentGameIndex();
     }
     async function loadStatistics() {
+      const request = ++statisticsRequest;
       try {
         await historyReady;
         console.log("[Popup] Loading statistics for:", selectedTimeFrame);
@@ -728,6 +741,8 @@
             type: "GET_DASHBOARD_DATA"
           })
         ]);
+        const savedState = !historyLoaded ? await loadCurrentGameIndex() : null;
+        if (request !== statisticsRequest) return;
         console.log("[Popup] Statistics response:", statsResponse);
         console.log("[Popup] Games response:", gamesResponse);
         if (statsResponse && statsResponse.success) {
@@ -741,16 +756,22 @@
           lastGame = null;
         }
         if (gamesResponse && gamesResponse.success && gamesResponse.games) {
+          const selectedDate = historyLoaded ? allGames[currentGameIndex]?.date : initialDate;
           recordedGames = gamesResponse.games;
           rebuildHistory();
           if (!historyLoaded) {
-            await loadCurrentGameIndex();
-            const requestedIndex = allGames.findIndex((game) => game.date === initialDate);
-            if (requestedIndex >= 0) currentGameIndex = requestedIndex;
+            const savedIndex = savedState?.[STORAGE_KEYS.CURRENT_GAME_INDEX];
+            currentGameIndex = Number.isInteger(savedIndex) && savedState[STORAGE_KEYS.LAST_GAMES_COUNT] === allGames.length && savedIndex >= 0 && savedIndex < allGames.length ? savedIndex : 0;
           }
+          const selectedIndex = allGames.findIndex((game) => game.date === selectedDate);
+          if (selectedIndex >= 0) currentGameIndex = selectedIndex;
           historyLoaded = true;
           if (currentGameIndex >= allGames.length) {
             currentGameIndex = Math.max(0, allGames.length - 1);
+          }
+          if (allGames[currentGameIndex]?.date !== selectedDate) {
+            playSession = null;
+            showSolverSolution = false;
           }
           console.log("[Popup] \u2705 All games loaded:", allGames.length, "Current index:", currentGameIndex);
         } else {
@@ -758,13 +779,16 @@
           allGames = [];
         }
       } catch (error) {
+        if (request !== statisticsRequest) return;
         console.error("[Popup] Error loading statistics:", error);
         statistics = null;
         lastGame = null;
       } finally {
-        render();
-        calculateSolverResults();
-        calculateReaderAverages();
+        if (request === statisticsRequest) {
+          render();
+          calculateSolverResults();
+          calculateReaderAverages();
+        }
       }
     }
     chrome.runtime.onMessage.addListener((message) => {
@@ -793,12 +817,7 @@
           };
         } else activeNotification = null;
         console.log(`[Popup] Scrape complete - ${message.newGames} new games, ${message.totalGames} total checked`);
-        if (message.newGames > 0) {
-          currentGameIndex = 0;
-          showSolverSolution = false;
-          saveCurrentGameIndex();
-          console.log("[Popup] Reset to newest game due to new games found");
-        }
+        render();
         loadStatistics();
       } else if (message.type === "WORDLE_BOT_SCRAPE_ERROR") {
         scraperStatus.active = false;
@@ -865,7 +884,7 @@
           maxIterations: 200
         });
         console.log("[Popup] Incremental scrape response:", response);
-        if (response && !response.success) {
+        if (response && (response.skipped || !response.success)) {
           scraperStatus.active = false;
           scraperStatus.message = "";
           render();
@@ -1183,18 +1202,13 @@
     }
     async function loadCurrentGameIndex() {
       try {
-        const result = await chrome.storage.local.get([
+        return await chrome.storage.local.get([
           STORAGE_KEYS.CURRENT_GAME_INDEX,
           STORAGE_KEYS.LAST_GAMES_COUNT
         ]);
-        const savedIndex = result[STORAGE_KEYS.CURRENT_GAME_INDEX];
-        const savedGamesCount = result[STORAGE_KEYS.LAST_GAMES_COUNT];
-        if (typeof savedIndex === "number" && savedGamesCount === allGames.length && savedIndex >= 0 && savedIndex < allGames.length) {
-          currentGameIndex = savedIndex;
-          console.log("[Popup] Restored game index:", currentGameIndex);
-        }
       } catch (error) {
         console.warn("[Popup] Failed to load current game index:", error);
+        return {};
       }
     }
     function renderLastGame() {

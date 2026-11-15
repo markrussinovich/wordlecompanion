@@ -51,6 +51,178 @@ async function backgroundWorker(
   return background!;
 }
 
+test('popup resumes unfinished games and keeps them playable when imports complete', async ({
+  browserName,
+}, testInfo) => {
+  const context = await chromium.launchPersistentContext('', {
+    channel: testInfo.project.use.channel || browserName,
+    headless: true,
+    args: [
+      `--disable-extensions-except=${path.resolve('dist')}`,
+      `--load-extension=${path.resolve('dist')}`,
+    ],
+  });
+  try {
+    const background = await backgroundWorker(context);
+    const dates = await background.evaluate(async () => {
+      const dates = [1, 2, 3].map((days) => {
+        const date = new Date();
+        date.setDate(date.getDate() - days);
+        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+      });
+      await chrome.storage.local.set({
+        wordleShowUnplayed: true,
+        games: dates.map((date, index) => ({
+          date,
+          solution: 'PLANT',
+          attempts: index === 2 ? 3 : 0,
+          won: index === 2,
+          nytReaderSource: 'manual',
+        })),
+        wordlePlaySessions: {
+          [dates[0]]: {
+            date: dates[0],
+            mode: 'replay',
+            status: 'playing',
+            rows: [[...'SLATE'].map((letter) => ({ letter, status: 'absent' }))],
+            draft: 'PL',
+          },
+        },
+      });
+      return dates;
+    });
+    const root = background.url().replace(/\/background\.js.*$/, '');
+    const popup = await context.newPage();
+    await popup.goto(`${root}/popup.html?date=${dates[0]}`);
+    const board = popup.locator('#popup-game-board');
+    const controls = popup.frameLocator('#popup-play-controls');
+    await expect(board).toHaveAttribute('data-ready', 'true');
+    await expect(board.locator('.board-row').nth(1).locator('.board-cell'))
+      .toHaveText(['P', 'L', '', '', '']);
+    await popup.keyboard.type('A');
+    await expect(board.locator('.board-row').nth(1).locator('.board-cell'))
+      .toHaveText(['P', 'L', 'A', '', '']);
+
+    const refreshed = popup.waitForEvent('console', {
+      predicate: (message) => message.text().includes('All games loaded:'),
+    });
+    await background.evaluate(async () => {
+      await chrome.runtime.sendMessage({
+        type: 'WORDLE_BOT_SCRAPE_COMPLETE',
+        newGames: 1,
+        errors: 0,
+      }).catch(() => {});
+    });
+    await refreshed;
+    await expect(board).toHaveAttribute('data-date', dates[0]);
+    await expect(controls.getByRole('button', { name: 'Type N', exact: true }))
+      .toBeEnabled();
+    await popup.keyboard.type('NT');
+    await popup.keyboard.press('Enter');
+    await expect(popup.locator('#popup-play-controls')).toHaveCount(0);
+    await expect(board.locator('.board-row').nth(1).locator('.board-cell-correct'))
+      .toHaveCount(5);
+
+    await popup.getByRole('button', { name: 'Previous game', exact: true }).click();
+    await expect(board).toHaveAttribute('data-date', dates[1]);
+    await expect(board).toHaveAttribute('data-ready', 'true');
+    await controls.getByRole('button', { name: 'Type P', exact: true }).click();
+    await expect(board.locator('.board-row').first().locator('.board-cell'))
+      .toHaveText(['P', '', '', '', '']);
+    await popup.getByRole('button', { name: 'Previous game', exact: true }).click();
+    await expect(board).toHaveAttribute('data-date', dates[2]);
+    await expect(popup.locator('#popup-play-controls')).toHaveCount(0);
+    await popup.getByRole('button', { name: 'Next game', exact: true }).click();
+    await expect(board).toHaveAttribute('data-date', dates[1]);
+    await expect(board).toHaveAttribute('data-ready', 'true');
+    await popup.keyboard.type('L');
+    await expect(board.locator('.board-row').first().locator('.board-cell'))
+      .toHaveText(['P', 'L', '', '', '']);
+  } finally {
+    await context.close();
+  }
+});
+
+test('popup navigation keeps its date through new games and out-of-order loads', async ({
+  browserName,
+}, testInfo) => {
+  const context = await chromium.launchPersistentContext('', {
+    channel: testInfo.project.use.channel || browserName,
+    headless: true,
+    args: [
+      `--disable-extensions-except=${path.resolve('dist')}`,
+      `--load-extension=${path.resolve('dist')}`,
+    ],
+  });
+  try {
+    const background = await backgroundWorker(context);
+    await context.addInitScript(() => {
+      if (!location.pathname.endsWith('/popup.html')) return;
+      let holdNext = false;
+      window.addEventListener('test-hold-load', () => { holdNext = true; });
+      const sendMessage = chrome.runtime.sendMessage;
+      chrome.runtime.sendMessage = ((
+        message: { type?: string },
+        ...args: unknown[]
+      ) => {
+        const response = Reflect.apply(sendMessage, chrome.runtime, [message, ...args]);
+        if (message.type !== 'GET_DASHBOARD_DATA' || !holdNext) return response;
+        holdNext = false;
+        return response.then((value: unknown) => new Promise((resolve) => {
+          document.documentElement.dataset.heldLoad = 'true';
+          window.addEventListener('test-release-load', () => resolve(value), { once: true });
+        }));
+      }) as typeof chrome.runtime.sendMessage;
+    });
+    const games = await background.evaluate(async () => {
+      const games = [1, 2, 3, 4].map((days) => {
+        const date = new Date();
+        date.setDate(date.getDate() - days);
+        return {
+          date: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`,
+          solution: 'PLANT',
+          attempts: 3,
+          won: true,
+          nytReaderSource: 'manual',
+        };
+      });
+      await chrome.storage.local.set({ games: games.slice(1) });
+      return games;
+    });
+    const root = background.url().replace(/\/background\.js.*$/, '');
+    const popup = await context.newPage();
+    await popup.goto(`${root}/popup.html?date=${games[2].date}`);
+    const board = popup.locator('#popup-game-board');
+    await expect(board).toHaveAttribute('data-date', games[2].date);
+    await popup.evaluate(() => window.dispatchEvent(new Event('test-hold-load')));
+    await background.evaluate(async (games) => {
+      await chrome.storage.local.set({
+        games: games.slice(1).map((game) => ({ ...game, skillScore: 90 })),
+      });
+    }, games);
+    await expect(popup.locator('html')).toHaveAttribute('data-held-load', 'true');
+    await popup.getByRole('button', { name: 'Previous game', exact: true }).click();
+    await expect(board).toHaveAttribute('data-date', games[3].date);
+    await background.evaluate(async (games) => {
+      await chrome.storage.local.set({ games });
+    }, games);
+    await expect(popup.locator('.stat-card').last().locator('.stat-value'))
+      .toHaveText('4');
+    await expect(board).toHaveAttribute('data-date', games[3].date);
+    await popup.keyboard.press('ArrowRight');
+    await expect(board).toHaveAttribute('data-date', games[2].date);
+    await popup.evaluate(async () => {
+      window.dispatchEvent(new Event('test-release-load'));
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    });
+    await expect(board).toHaveAttribute('data-date', games[2].date);
+    await popup.getByRole('button', { name: 'Jump to most recent game', exact: true }).click();
+    await expect(board).toHaveAttribute('data-date', games[0].date);
+  } finally {
+    await context.close();
+  }
+});
+
 test('opening unplayed dashboard tiles routes typing to the selected board', async ({
   browserName,
 }, testInfo) => {

@@ -912,7 +912,7 @@ test('popup fits browser bounds, provides colored comparison buttons and keeps p
 });
 
 for (const fillGaps of [false, true]) {
-  test(`popup height stays stable during ${fillGaps ? 'gap-fill' : 'incremental'} refresh`, async ({
+  test(`popup refresh responds immediately and stays stable during ${fillGaps ? 'gap-fill' : 'incremental'} import`, async ({
     page,
   }) => {
     await page.setViewportSize({ width: 380, height: 600 });
@@ -926,9 +926,21 @@ for (const fillGaps of [false, true]) {
           won: true,
         },
       ];
+      const refresh = ((window as any).refreshTest = {
+        hold: false,
+        starts: [] as string[],
+        releaseHistory: null as any,
+        releaseStart: null as any,
+      });
       (window as any).chrome = {
         runtime: {
           sendMessage: async (message: any) => {
+            if (message.type === 'START_WORDLE_BOT_SCRAPE') {
+              refresh.starts.push(message.mode);
+              return new Promise((resolve) => {
+                refresh.releaseStart = resolve;
+              });
+            }
             if (message.type === 'GET_DASHBOARD_DATA')
               return { success: true, games };
             if (message.type === 'GET_QUICK_STATS')
@@ -950,7 +962,14 @@ for (const fillGaps of [false, true]) {
         },
         storage: {
           local: {
-            get: async () => ({ games }),
+            get: async (keys: string[]) => {
+              if (refresh.hold && keys.length === 1 && keys[0] === 'games') {
+                return new Promise((resolve) => {
+                  refresh.releaseHistory = () => resolve({ games });
+                });
+              }
+              return { games };
+            },
             set: async () => {},
           },
         },
@@ -974,9 +993,27 @@ for (const fillGaps of [false, true]) {
       });
     const before = await measure();
     expect(before.overflow).toBe(0);
-    await page.getByRole('button', { name: /Refresh/ }).click();
+    const immediate = await page.evaluate(() => {
+      (window as any).refreshTest.hold = true;
+      document.getElementById('refresh-btn')!.click();
+      const button = document.getElementById('refresh-btn') as HTMLButtonElement;
+      button.click();
+      return { disabled: button.disabled, text: button.textContent?.trim() };
+    });
+    expect(immediate).toEqual({ disabled: true, text: '\u21bb Refreshing...' });
+    await expect(page.locator('.loading-message')).toHaveText(
+      'Checking game history...'
+    );
+    expect(await measure()).toEqual(before);
+    await page.evaluate(() => (window as any).refreshTest.releaseHistory());
     await expect(page.locator('.loading-message')).toHaveText(
       fillGaps ? 'Filling gaps in game history...' : 'Checking for new games...'
+    );
+    expect(
+      await page.evaluate(() => (window as any).refreshTest.starts)
+    ).toEqual([fillGaps ? 'full' : 'incremental']);
+    await page.evaluate(() =>
+      (window as any).refreshTest.releaseStart({ success: true })
     );
     await expect(page.locator('.stats-grid')).toBeHidden();
     await expect(
@@ -1008,6 +1045,92 @@ for (const fillGaps of [false, true]) {
     expect(await measure()).toEqual(before);
   });
 }
+
+test('refresh updates the mounted play view and recovers from skipped or failed startup', async ({
+  page,
+}) => {
+  await page.route('**/play.html?*', (route) =>
+    route.fulfill({ contentType: 'text/html', body: '<html></html>' })
+  );
+  await page.addInitScript(() => {
+    const games = [{ date: '2026-10-28', attempts: 4, won: true }];
+    const refresh = ((window as any).refreshTest = {
+      resolve: null as any,
+      reject: null as any,
+    });
+    (window as any).chrome = {
+      runtime: {
+        getURL: (file: string) => `${location.origin}/${file}`,
+        onMessage: { addListener() {} },
+        sendMessage: async (message: any) => {
+          if (message.type === 'START_WORDLE_BOT_SCRAPE') {
+            return new Promise((resolve, reject) => {
+              refresh.resolve = resolve;
+              refresh.reject = reject;
+            });
+          }
+          if (message.type === 'GET_DASHBOARD_DATA')
+            return { success: true, games };
+          return { success: true };
+        },
+      },
+      storage: {
+        local: {
+          get: async () => ({ games }),
+          set: async () => {},
+        },
+      },
+    };
+  });
+  await page.goto(`${origin}/popup.html?embedded=1&date=2026-10-29`);
+  await expect(page.locator('#popup-play-controls')).toBeVisible();
+  await page.evaluate(() => {
+    (window as any).originalPlayFrame =
+      document.getElementById('popup-play-controls');
+  });
+  for (const outcome of ['skipped', 'failed', 'rejected']) {
+    const immediate = await page.evaluate(() => {
+      const button = document.getElementById('refresh-btn') as HTMLButtonElement;
+      button.click();
+      return {
+        disabled: button.disabled,
+        text: button.textContent?.trim(),
+        busy: button.getAttribute('aria-busy'),
+      };
+    });
+    expect(immediate).toEqual({
+      disabled: true,
+      text: '\u21bb Refreshing...',
+      busy: 'true',
+    });
+    await expect(page.locator('#refresh-btn')).toHaveAttribute(
+      'title',
+      'Checking for new games...'
+    );
+    await page.evaluate((outcome) => {
+      const refresh = (window as any).refreshTest;
+      if (outcome === 'rejected')
+        refresh.reject(new Error('Background unavailable'));
+      else
+        refresh.resolve({
+          success: outcome === 'skipped',
+          skipped: outcome === 'skipped',
+        });
+    }, outcome);
+    await expect(page.locator('#refresh-btn')).toBeEnabled();
+    await expect(page.locator('#refresh-btn')).toHaveAttribute(
+      'aria-busy',
+      'false'
+    );
+    expect(
+      await page.evaluate(
+        () =>
+          document.getElementById('popup-play-controls') ===
+          (window as any).originalPlayFrame
+      )
+    ).toBe(true);
+  }
+});
 
 test('popup navigation stays immediate and stable while background work runs', async ({
   page,
