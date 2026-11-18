@@ -511,7 +511,7 @@
       const refreshBtn = document.getElementById("refresh-btn");
       if (refreshBtn) {
         refreshBtn.disabled = scraperStatus.active;
-        refreshBtn.textContent = `\u21BB ${scraperStatus.active ? "Refreshing..." : "Refresh"}`;
+        refreshBtn.textContent = "\u21BB Refresh";
         refreshBtn.setAttribute("aria-busy", String(scraperStatus.active));
         refreshBtn.title = scraperStatus.active ? scraperStatus.message : "";
       }
@@ -543,7 +543,7 @@
             <h1>WordlePop</h1>
             <button class="refresh-btn" id="refresh-btn" aria-busy="${scraperStatus.active}"
               title="${escapeHtml(scraperStatus.active ? scraperStatus.message : "")}" ${scraperStatus.active ? "disabled" : ""}>
-              \u21BB ${scraperStatus.active ? "Refreshing..." : "Refresh"}
+              \u21BB Refresh
             </button>
           </div>
         </header>

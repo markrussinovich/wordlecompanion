@@ -223,7 +223,7 @@ test('popup navigation keeps its date through new games and out-of-order loads',
   }
 });
 
-test('opening unplayed dashboard tiles routes typing to the selected board', async ({
+test('opening unplayed dashboard tiles enables controls and accepts clicks and typing', async ({
   browserName,
 }, testInfo) => {
   const extensionPath = path.resolve('dist');
@@ -286,6 +286,13 @@ test('opening unplayed dashboard tiles routes typing to the selected board', asy
       const game = dashboard.frameLocator(
         `iframe[title="Play Wordle ${date}"]`
       );
+      const controls = game.frameLocator('#popup-play-controls');
+      await expect(
+        controls.locator('.play-keyboard button:disabled')
+      ).toHaveCount(0);
+      await expect(
+        controls.getByRole('button', { name: 'Type P', exact: true })
+      ).toBeEnabled();
       await expect(game.locator('#popup-game-board')).toHaveAttribute(
         'aria-busy',
         'false'
@@ -302,6 +309,14 @@ test('opening unplayed dashboard tiles routes typing to the selected board', asy
         )
         .toBe(true);
       await dashboard.keyboard.type('PL', { delay: 30 });
+      await expect(
+        game.locator('.board-row').first().locator('.board-cell')
+      ).toHaveText(['P', 'L', '', '', '']);
+      await controls.getByRole('button', { name: 'Type A', exact: true }).click();
+      await expect(
+        game.locator('.board-row').first().locator('.board-cell')
+      ).toHaveText(['P', 'L', 'A', '', '']);
+      await controls.getByRole('button', { name: 'Backspace', exact: true }).click();
       await expect(
         game.locator('.board-row').first().locator('.board-cell')
       ).toHaveText(['P', 'L', '', '', '']);

@@ -989,6 +989,9 @@ for (const fillGaps of [false, true]) {
             .querySelector('.popup-footer')!
             .getBoundingClientRect().y,
           overflow: main.scrollHeight - main.clientHeight,
+          refreshWidth: document
+            .getElementById('refresh-btn')!
+            .getBoundingClientRect().width,
         };
       });
     const before = await measure();
@@ -1000,7 +1003,7 @@ for (const fillGaps of [false, true]) {
       button.click();
       return { disabled: button.disabled, text: button.textContent?.trim() };
     });
-    expect(immediate).toEqual({ disabled: true, text: '\u21bb Refreshing...' });
+    expect(immediate).toEqual({ disabled: true, text: '\u21bb Refresh' });
     await expect(page.locator('.loading-message')).toHaveText(
       'Checking game history...'
     );
@@ -1100,7 +1103,7 @@ test('refresh updates the mounted play view and recovers from skipped or failed 
     });
     expect(immediate).toEqual({
       disabled: true,
-      text: '\u21bb Refreshing...',
+      text: '\u21bb Refresh',
       busy: 'true',
     });
     await expect(page.locator('#refresh-btn')).toHaveAttribute(
